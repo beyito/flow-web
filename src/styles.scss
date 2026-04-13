@@ -1,1 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
+@import "@joint/plus/joint-plus.css";
+
+body {
+  height: 100vh;
+  box-sizing: border-box;
+  margin: 0;
+}
