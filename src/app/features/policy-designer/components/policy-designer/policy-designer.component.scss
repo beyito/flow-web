@@ -1,0 +1,168 @@
+:host {
+  display: block;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+}
+
+.panel {
+  padding: 24px;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+}
+
+label,
+.section-title,
+.section-hint,
+.empty-text,
+.info-text,
+.info-detail {
+  margin: 0;
+}
+
+input,
+select,
+button {
+  border-radius: 10px;
+  border: 1px solid #334155;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+input,
+select {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+button {
+  background: #38bdf8;
+  color: #082f49;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-row,
+.tool-buttons,
+.lane-input {
+  display: grid;
+  gap: 10px;
+}
+
+.button-row {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tool-buttons {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.lane-input {
+  grid-template-columns: 1fr auto;
+}
+
+.add-btn,
+.remove-btn {
+  width: 44px;
+  padding: 10px;
+}
+
+.lanes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lane-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 12px;
+}
+
+.wide-button {
+  width: 100%;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: #fef2f2;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.rename-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.info-box {
+  margin-top: auto;
+}
+
+.canvas {
+  position: relative;
+  overflow: auto;
+  padding: 24px;
+}
+
+.canvas::before {
+  content: '';
+  position: absolute;
+  inset: 24px;
+  border-radius: 24px;
+  border: 2px dashed transparent;
+  pointer-events: none;
+  transition: border-color 0.2s ease;
+}
+
+.canvas-drag-over::before {
+  border-color: #38bdf8;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas {
+    min-height: 70vh;
+  }
+}

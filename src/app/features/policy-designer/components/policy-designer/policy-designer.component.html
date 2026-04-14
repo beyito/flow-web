@@ -1,0 +1,105 @@
+<div class="app-shell">
+  <aside class="panel">
+    <h1>Disenador de diagramas</h1>
+
+    <section class="block">
+      <label>Nombre de politica</label>
+      <input type="text" [value]="newPolicyName" (input)="newPolicyName = $any($event.target).value" placeholder="Diagrama de aprobacion" />
+      <label>Descripcion</label>
+      <input type="text" [value]="newPolicyDescription" (input)="newPolicyDescription = $any($event.target).value" placeholder="Por calles / roles" />
+      <button type="button" (click)="createPolicy()">Crear politica</button>
+    </section>
+
+    <section class="block">
+      <label>Politicas guardadas</label>
+      <select [value]="selectedPolicyId ?? ''" (change)="onPolicySelect($event)">
+        <option value="">-- Seleccionar --</option>
+        <option *ngFor="let policy of policies" [value]="policy.id">{{ policy.name }}</option>
+      </select>
+      <div class="button-row">
+        <button type="button" (click)="loadPolicy()" [disabled]="!selectedPolicyId">Cargar</button>
+        <button type="button" (click)="savePolicyGraph()" [disabled]="!selectedPolicyId">Guardar</button>
+        <button type="button" (click)="newDiagram()">Nuevo</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <p class="section-title">Calles de negocio</p>
+      <div class="lane-input">
+        <input type="text" [value]="newLaneName" (input)="newLaneName = $any($event.target).value" placeholder="Ej: Vendedor" />
+        <button type="button" (click)="addLane()" class="add-btn">+</button>
+      </div>
+      <div class="lanes-list" *ngIf="lanes.length > 0">
+        <div class="lane-item" *ngFor="let lane of lanes" [style.borderLeft]="'4px solid ' + lane.color">
+          <span>{{ lane.name }}</span>
+          <button class="remove-btn" (click)="removeLane(lane.id)">x</button>
+        </div>
+      </div>
+      <p *ngIf="lanes.length === 0" class="empty-text">Sin calles definidas</p>
+    </section>
+
+    <section class="block">
+      <p class="section-title">Agregar elementos</p>
+      <p class="section-hint">Arrastra desde aqui al lienzo</p>
+      <div class="tool-buttons">
+        <button
+          type="button"
+          draggable="true"
+          *ngFor="let node of nodeTemplates"
+          (dragstart)="startDraggingNode(node.type, node.label, $event)">
+          {{ node.label }}
+        </button>
+      </div>
+      <button type="button" class="wide-button" (click)="connectSelected()">
+        {{ isConnectionMode ? 'Salir de conexion' : 'Crear conexion' }}
+      </button>
+      <button type="button" class="wide-button" (click)="clearSelection()">Borrar seleccion</button>
+    </section>
+
+    <section class="block" *ngIf="selectedElementType">
+      <p class="section-title">Editar elemento</p>
+      <p class="section-hint">Elemento seleccionado: {{ selectedElementType === 'node' ? 'Nodo' : 'Flecha' }}</p>
+      
+      <!-- Renombrar nodo -->
+      <div *ngIf="selectedElementType === 'node'">
+        <div *ngIf="!isRenaming">
+          <button type="button" class="wide-button" (click)="startRenaming()">Renombrar nodo</button>
+        </div>
+        <div *ngIf="isRenaming" class="rename-form">
+          <input 
+            type="text" 
+            [(ngModel)]="newElementName" 
+            placeholder="Nuevo nombre del nodo"
+            [autofocus]="isRenaming" />
+          <div class="button-row">
+            <button type="button" (click)="confirmRename()">Confirmar</button>
+            <button type="button" (click)="cancelRename()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Para links, mostrar mensaje -->
+      <div *ngIf="selectedElementType === 'link'">
+        <p class="section-hint">Arrastra el origen o destino de la flecha para cambiar la conexión</p>
+      </div>
+
+      <!-- Eliminar elemento -->
+      <button type="button" class="wide-button delete-btn" (click)="deleteElement()">Eliminar elemento (Supr)</button>
+    </section>
+
+    <section class="block info-box">
+      <p class="info-text">{{ infoMessage }}</p>
+      <p class="info-detail"><strong>Origen:</strong> {{ selectedSourceId ?? 'ninguno' }}</p>
+      <p class="info-detail"><strong>Destino:</strong> {{ selectedTargetId ?? 'ninguno' }}</p>
+      <p class="info-detail"><strong>Modo conexion:</strong> {{ isConnectionMode ? 'activo' : 'inactivo' }}</p>
+    </section>
+  </aside>
+
+  <main
+    class="canvas"
+    [class.canvas-drag-over]="isCanvasDragOver"
+    #canvas
+    (dragover)="onCanvasDragOver($event)"
+    (dragleave)="onCanvasDragLeave()"
+    (drop)="onCanvasDrop($event)"></main>
+</div>
