@@ -76,11 +76,141 @@
             <button type="button" (click)="cancelRename()">Cancelar</button>
           </div>
         </div>
+
+        <div *ngIf="selectedNodeType === 'TASK'" class="task-config">
+          <p class="section-title">Formulario de verificación</p>
+
+          <!-- Título del formulario -->
+          <label>Título del formulario</label>
+          <input
+            type="text"
+            [(ngModel)]="selectedTaskFormTitle"
+            (ngModelChange)="applySelectedNodeMetadata()"
+            placeholder="Ej: Verificación de instalación"
+          />
+
+          <!-- Descripción del formulario -->
+          <label>Descripción del formulario</label>
+          <textarea
+            [(ngModel)]="selectedTaskFormDescription"
+            (ngModelChange)="applySelectedNodeMetadata()"
+            placeholder="Describe qué debe verificarse cuando se complete esta tarea"
+            rows="3"></textarea>
+
+          <!-- Diseñador de formulario -->
+          <div class="form-designer">
+            <div class="form-designer-header">
+              <h4>Preguntas del formulario</h4>
+              <button type="button" class="toggle-btn" (click)="toggleFormDesigner()">
+                {{ isFormDesignerOpen ? 'Ocultar diseñador' : 'Mostrar diseñador' }}
+              </button>
+            </div>
+
+            <!-- Lista de campos existentes -->
+            <div class="fields-list" *ngIf="selectedTaskFormFields.length > 0">
+              <div class="field-item" *ngFor="let field of selectedTaskFormFields; index as i; trackBy: trackByFieldId">
+                <div class="field-header">
+                  <span class="field-type">{{ getFieldTypeLabel(field.type) }}</span>
+                  <span class="field-label">{{ field.label }}</span>
+                  <div class="field-actions">
+                    <button type="button" class="small-btn edit-btn" (click)="editField(i)">Editar</button>
+                    <button type="button" class="small-btn delete-btn" (click)="removeTaskField(i)">×</button>
+                  </div>
+                </div>
+                <div class="field-details" *ngIf="field.required || field.requiresAttachment">
+                  <span *ngIf="field.required" class="field-badge required">Requerido</span>
+                  <span *ngIf="field.requiresAttachment" class="field-badge attachment">Requiere adjunto</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario para agregar nuevo campo -->
+            <div class="new-field-form" *ngIf="isFormDesignerOpen">
+              <h5>Agregar nueva pregunta</h5>
+
+              <label>Tipo de pregunta</label>
+              <select [(ngModel)]="newFieldType">
+                <option value="text">Texto corto</option>
+                <option value="textarea">Texto largo</option>
+                <option value="number">Número</option>
+                <option value="date">Fecha</option>
+                <option value="select">Selección única</option>
+                <option value="checkbox">Selección múltiple</option>
+                <option value="file">Archivo</option>
+              </select>
+
+              <label>Pregunta</label>
+              <input
+                type="text"
+                [(ngModel)]="newFieldLabel"
+                placeholder="¿Cuál es el resultado de la tarea?"
+              />
+
+              <div *ngIf="newFieldType === 'select' || newFieldType === 'checkbox'">
+                <label>Opciones (separadas por coma)</label>
+                <input
+                  type="text"
+                  [(ngModel)]="newFieldOptions"
+                  placeholder="Opción 1, Opción 2, Opción 3"
+                />
+              </div>
+
+              <div class="field-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="newFieldRequiresAttachment" />
+                  Requiere adjunto
+                </label>
+
+                <div *ngIf="newFieldRequiresAttachment">
+                  <label>Etiqueta para el adjunto</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="newFieldAttachmentLabel"
+                    placeholder="Ej: Foto del resultado"
+                  />
+                </div>
+              </div>
+
+              <button type="button" class="add-field-btn" (click)="addTaskField()">Agregar pregunta</button>
+            </div>
+          </div>
+
+          <!-- Adjuntos generales del formulario -->
+          <label>Adjuntos del formulario</label>
+          <input type="file" multiple (change)="onTaskAttachmentChange($event)" />
+          <ul class="attachment-list">
+            <li *ngFor="let attachment of selectedTaskAttachments; index as i">
+              {{ attachment.name }} ({{ attachment.type || 'archivo' }})
+              <button type="button" class="small-btn" (click)="removeAttachment(i)">Eliminar</button>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="selectedNodeType === 'DECISION'" class="decision-config">
+          <p class="section-title">Condicional</p>
+          <label>Expresión de condición</label>
+          <input
+            type="text"
+            [(ngModel)]="selectedDecisionExpression"
+            (ngModelChange)="applySelectedNodeMetadata()"
+            placeholder="Ej: monto > 1000"
+          />
+          <p class="section-hint">
+            Crea dos flechas salientes desde este nodo. Una flecha se etiqueta como "Sí" y la otra como "No".
+          </p>
+        </div>
       </div>
 
       <!-- Para links, mostrar mensaje -->
       <div *ngIf="selectedElementType === 'link'">
-        <p class="section-hint">Arrastra el origen o destino de la flecha para cambiar la conexión</p>
+        <p class="section-title">Etiqueta de flecha</p>
+        <label>Condición / texto de ruta</label>
+        <input
+          type="text"
+          [(ngModel)]="selectedLinkCondition"
+          placeholder="Sí / No / Otro texto"
+        />
+        <button type="button" class="wide-button" (click)="applySelectedLinkCondition()">Guardar etiqueta</button>
       </div>
 
       <!-- Eliminar elemento -->

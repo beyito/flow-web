@@ -6,7 +6,7 @@ import { dia, shapes, linkTools, elementTools, ui } from '@joint/plus';
 import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
-import { Lane, PolicyPayload, PolicySummary } from '../../models/policy-designer.models';
+import { Attachment, Lane, PolicyPayload, PolicySummary, FormField } from '../../models/policy-designer.models';
 import { LANE_COLORS, NODE_TEMPLATES } from '../../utils/policy-designer.constants';
 
 @Component({
@@ -48,6 +48,19 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public isCanvasDragOver = false;
   public selectedElementId: dia.Cell.ID | null = null;
   public selectedElementType: 'node' | 'link' | null = null;
+  public selectedNodeType: string | null = null;
+  public selectedTaskFormTitle = '';
+  public selectedTaskFormDescription = '';
+  public selectedTaskFormFields: FormField[] = [];
+  public selectedTaskAttachments: Attachment[] = [];
+  public selectedDecisionExpression = '';
+  public selectedLinkCondition = '';
+  public newFieldLabel = '';
+  public newFieldType: FormField['type'] = 'text';
+  public newFieldOptions = '';
+  public newFieldRequiresAttachment = false;
+  public newFieldAttachmentLabel = '';
+  public isFormDesignerOpen = false;
   public newElementName = '';
   public isRenaming = false;
 
@@ -180,19 +193,26 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     });
 
     this.paper.on('element:pointerdown', (cellView: any) => {
-      // 🚩 IMPORTANTE: Quitamos el `toFront()` para las calles
-      // Si la calle se va al frente, ¡tapa a todos los nodos!
-      if (!(cellView.model as any).isLaneBackground) {
-        cellView.model.toFront(); // Solo los nodos se van al frente al agarrarlos
+      const element = cellView.model;
+    // // 🚩 SOLO traemos al frente si NO es una calle
+      if (!element.get('isLaneBackground')) {
+        element.toFront(); 
+      } else {
+        // Si es una calle, nos aseguramos de que se mantenga al fondo
+        element.toBack(); 
       }
     });
+    
 
     this.paper.on('blank:pointerdown', () => {
+      
       this.clearTools(); 
       this.selectedElementId = null;
       this.selectedElementType = null;
+      this.selectedNodeType = null;
       this.isRenaming = false;
       this.clearSelection();
+      this.refreshView();
     });
   }
 
@@ -251,6 +271,7 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     this.diagramCanvasService.deleteElement(this.graph, this.selectedElementId);
     this.selectedElementId = null;
     this.selectedElementType = null;
+    this.selectedNodeType = null;
     this.isRenaming = false;
     this.infoMessage = 'Elemento eliminado.';
     this.scheduleLocalSave();
@@ -484,10 +505,15 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     const element = this.graph.getCell(elementId);
     if (element && type === 'node') {
       this.newElementName = (element as any).attr('label/text') || '';
+      this.selectedNodeType = element.get('nodeType') ?? null;
+      this.loadSelectedNodeMetadata(element as dia.Element);
       this.infoMessage = `Nodo seleccionado: "${this.newElementName}"`;
     } else if (element && element.isLink()) {
+      this.selectedNodeType = null;
+      this.selectedLinkCondition = element.get('conditionLabel') ?? '';
       this.infoMessage = 'Flecha seleccionada.';
     }
+    this.refreshView();
   }
 
   public startRenaming(): void {
@@ -517,6 +543,171 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public cancelRename(): void {
     this.isRenaming = false;
     this.infoMessage = 'Renombrado cancelado.';
+  }
+
+  private refreshView(): void {
+    this.cdr.detectChanges();
+  }
+
+  private loadSelectedNodeMetadata(element: dia.Element): void {
+    const nodeMeta = element.get('nodeMeta') ?? {};
+    this.selectedTaskFormTitle = nodeMeta.taskForm?.title ?? '';
+    this.selectedTaskFormDescription = nodeMeta.taskForm?.description ?? '';
+    this.selectedTaskFormFields = [...(nodeMeta.taskForm?.fields ?? [])];
+    this.selectedTaskAttachments = [...(nodeMeta.taskForm?.attachments ?? [])];
+    this.selectedDecisionExpression = nodeMeta.decisionExpression ?? '';
+  }
+
+  public applySelectedNodeMetadata(): void {
+    if (!this.selectedElementId || this.selectedElementType !== 'node') {
+      return;
+    }
+
+    const element = this.graph.getCell(this.selectedElementId) as dia.Element;
+    if (!element || element.isLink()) {
+      return;
+    }
+
+    const nodeType = element.get('nodeType');
+    const nodeMeta: any = element.get('nodeMeta') ?? {};
+
+    if (nodeType === 'TASK') {
+      nodeMeta.taskForm = {
+        title: this.selectedTaskFormTitle,
+        description: this.selectedTaskFormDescription,
+        fields: [...this.selectedTaskFormFields],
+        attachments: [...this.selectedTaskAttachments]
+      };
+    }
+
+    if (nodeType === 'DECISION') {
+      nodeMeta.decisionExpression = this.selectedDecisionExpression;
+    }
+
+    element.set('nodeMeta', nodeMeta);
+    this.scheduleLocalSave();
+  }
+
+  public addTaskField(): void {
+    const label = this.newFieldLabel.trim();
+    if (!label) {
+      this.infoMessage = 'Ingresa el nombre de la pregunta antes de agregar.';
+      return;
+    }
+
+    const options = this.newFieldType === 'select' || this.newFieldType === 'checkbox'
+      ? this.newFieldOptions.split(',').map(opt => opt.trim()).filter(opt => opt)
+      : undefined;
+
+    const newField: FormField = {
+      id: `field-${Date.now()}`,
+      type: this.newFieldType,
+      label,
+      placeholder: '',
+      required: false,
+      options,
+      requiresAttachment: this.newFieldRequiresAttachment,
+      attachmentLabel: this.newFieldRequiresAttachment ? this.newFieldAttachmentLabel : undefined
+    };
+
+    this.selectedTaskFormFields.push(newField);
+    this.resetNewFieldForm();
+    this.applySelectedNodeMetadata();
+  }
+
+  public removeTaskField(index: number): void {
+    this.selectedTaskFormFields.splice(index, 1);
+    this.applySelectedNodeMetadata();
+  }
+
+  public updateTaskField(index: number, field: FormField): void {
+    this.selectedTaskFormFields[index] = { ...field };
+    this.applySelectedNodeMetadata();
+  }
+
+  private resetNewFieldForm(): void {
+    this.newFieldLabel = '';
+    this.newFieldType = 'text';
+    this.newFieldOptions = '';
+    this.newFieldRequiresAttachment = false;
+    this.newFieldAttachmentLabel = '';
+  }
+
+  public toggleFormDesigner(): void {
+    this.isFormDesignerOpen = !this.isFormDesignerOpen;
+  }
+
+  public getFieldTypeLabel(type: FormField['type']): string {
+    const labels = {
+      text: 'Texto',
+      textarea: 'Texto largo',
+      number: 'Número',
+      date: 'Fecha',
+      select: 'Selección',
+      checkbox: 'Múltiple',
+      file: 'Archivo'
+    };
+    return labels[type] || type;
+  }
+
+  public trackByFieldId(index: number, field: FormField): string {
+    return field.id;
+  }
+
+  public editField(index: number): void {
+    // Por ahora solo mostramos un mensaje, pero podríamos implementar edición inline
+    this.infoMessage = `Para editar "${this.selectedTaskFormFields[index].label}", elimina y vuelve a crear el campo.`;
+  }
+
+  public async onTaskAttachmentChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) {
+      return;
+    }
+
+    for (let i = 0; i < input.files.length; i++) {
+      const file = input.files[i];
+      const dataUrl = await this.readFileAsDataURL(file);
+
+      this.selectedTaskAttachments.push({
+        id: `${Date.now()}-${i}-${file.name}`,
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        dataUrl
+      });
+    }
+
+    input.value = '';
+    this.applySelectedNodeMetadata();
+  }
+
+  public removeAttachment(index: number): void {
+    this.selectedTaskAttachments.splice(index, 1);
+    this.applySelectedNodeMetadata();
+  }
+
+  private readFileAsDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  public applySelectedLinkCondition(): void {
+    if (!this.selectedElementId || this.selectedElementType !== 'link') {
+      return;
+    }
+
+    const link = this.graph.getCell(this.selectedElementId) as dia.Link;
+    if (!link || !link.isLink()) {
+      return;
+    }
+
+    this.diagramCanvasService.updateLinkCondition(link, this.selectedLinkCondition);
+    this.scheduleLocalSave();
   }
 
   public newDiagram(): void {
@@ -549,7 +740,13 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const link = this.diagramCanvasService.createLink(source, target);
+    let conditionLabel: string | undefined;
+    if (source.get('nodeType') === 'DECISION') {
+      const outboundLinks = this.graph.getLinks().filter((link) => link.get('source')?.id === source.id).length;
+      conditionLabel = outboundLinks === 0 ? 'Sí' : outboundLinks === 1 ? 'No' : undefined;
+    }
+
+    const link = this.diagramCanvasService.createLink(source, target, conditionLabel);
     this.graph.addCell(link);
     this.selectedSourceId = null;
     this.selectedTargetId = null;

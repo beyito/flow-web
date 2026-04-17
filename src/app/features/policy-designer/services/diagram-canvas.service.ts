@@ -161,6 +161,20 @@ export class DiagramCanvasService {
     // Add ports to the shape
     shape.addPort({ id: 'in', group: 'in' });
     shape.addPort({ id: 'out', group: 'out' });
+    shape.set('nodeType', type);
+    if (type === 'TASK') {
+      shape.set('nodeMeta', {
+        taskForm: {
+          title: '',
+          description: '',
+          fields: [],
+          attachments: []
+        }
+      });
+    }
+    if (type === 'DECISION') {
+      shape.set('nodeMeta', { decisionExpression: '' });
+    }
 
     return shape;
   }
@@ -169,7 +183,8 @@ export class DiagramCanvasService {
     const link = new shapes.standard.Link();
     link.source(source);
     link.target(target);
-    link.set('z', 1000);
+    link.set('z', 0);
+    link.toBack();
     link.attr({
       line: {
         stroke: '#0f172a',
@@ -187,6 +202,7 @@ export class DiagramCanvasService {
     });
 
     if (condition) {
+      link.set('conditionLabel', condition);
       link.appendLabel({
         attrs: {
           text: {
@@ -227,7 +243,7 @@ public renderLaneBackgrounds(graph: dia.Graph, lanes: Lane[]): void {
       
       // 🚩 Usamos HeaderedRectangle: Es UN SOLO elemento indivisible
       const laneShape = new shapes.standard.HeaderedRectangle({
-        z: -1, // Se queda al fondo
+        z: -10, // Se queda al fondo
         position: { x: positionX, y: 0 },
         size: { width: laneWidth, height: this.height },
         isLaneBackground: true,
@@ -363,6 +379,39 @@ public renderLaneBackgrounds(graph: dia.Graph, lanes: Lane[]): void {
     const cell = graph.getCell(cellId);
     if (cell) {
       cell.remove();
+    }
+  }
+
+  public updateLinkCondition(link: dia.Link, condition: string): void {
+    if (!link || !link.isLink()) {
+      return;
+    }
+
+    if (link.labels().length > 0) {
+      link.removeLabel(0);
+    }
+
+    link.set('conditionLabel', condition);
+
+    if (condition) {
+      link.appendLabel({
+        attrs: {
+          text: {
+            text: condition,
+            fill: '#0f172a',
+            fontSize: 13,
+            fontWeight: 'bold'
+          },
+          rect: {
+            fill: '#ffffff',
+            stroke: '#0f172a',
+            strokeWidth: 1,
+            rx: 3,
+            ry: 3
+          }
+        },
+        position: 0.5
+      });
     }
   }
 

@@ -11,6 +11,37 @@ export interface Lane {
   x: number;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string;
+}
+
+export interface FormField {
+  id: string;
+  type: 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'date' | 'file';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[]; // Para select y checkbox
+  requiresAttachment?: boolean;
+  attachmentLabel?: string;
+}
+
+export interface TaskFormData {
+  title: string;
+  description: string;
+  fields: FormField[];
+  attachments: Attachment[];
+}
+
+export interface NodeMetadata {
+  taskForm?: TaskFormData;
+  decisionExpression?: string;
+}
+
 export interface PolicyPayload extends PolicySummary {
   diagramJson?: string;
   lanes?: Lane[];
