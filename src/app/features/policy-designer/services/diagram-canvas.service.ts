@@ -8,6 +8,14 @@ export class DiagramCanvasService {
   private readonly height = 800;
   private laneBackgrounds: dia.Element[] = [];
 
+  public getCanvasWidth(): number {
+    return this.width;
+  }
+
+  public getCanvasHeight(): number {
+    return this.height;
+  }
+
   public createGraph(): dia.Graph {
     return new dia.Graph({}, { cellNamespace: shapes });
   }
@@ -137,6 +145,99 @@ export class DiagramCanvasService {
           }
         });
         break;
+      case 'SYNCHRONIZATION':
+        shape = new shapes.standard.Rectangle({
+          ...baseOptions,
+          size: { width: 160, height: 20 },
+          attrs: {
+            body: {
+              fill: '#000000',
+              stroke: '#000000',
+              strokeWidth: 2,
+              rx: 0,
+              ry: 0
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#ffffff', fontSize: 12, fontWeight: 'bold' }
+          }
+        });
+        break;
+      case 'JOIN':
+        shape = new shapes.standard.Rectangle({
+          ...baseOptions,
+          size: { width: 160, height: 20 },
+          attrs: {
+            body: {
+              fill: '#374151',
+              stroke: '#374151',
+              strokeWidth: 2,
+              rx: 0,
+              ry: 0
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#ffffff', fontSize: 12, fontWeight: 'bold' }
+          }
+        });
+        break;
+      case 'FORK':
+        shape = new shapes.standard.Rectangle({
+          ...baseOptions,
+          size: { width: 20, height: 160 },
+          attrs: {
+            body: {
+              fill: '#000000',
+              stroke: '#000000',
+              strokeWidth: 2,
+              rx: 0,
+              ry: 0
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#ffffff', fontSize: 12, fontWeight: 'bold' }
+          }
+        });
+        break;
+      case 'DOCUMENT':
+        shape = new shapes.standard.Polygon({
+          ...baseOptions,
+          size: { width: 100, height: 120 },
+          attrs: {
+            body: {
+              refPoints: '0,0 80,0 100,20 100,100 80,120 0,120',
+              fill: '#ffffff',
+              stroke: '#6b7280',
+              strokeWidth: 2
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#374151', fontSize: 12 }
+          }
+        });
+        break;
+      case 'SUBPROCESS':
+        shape = new shapes.standard.Rectangle({
+          ...baseOptions,
+          size: { width: 140, height: 70 },
+          attrs: {
+            body: {
+              fill: '#f3f4f6',
+              stroke: '#374151',
+              strokeWidth: 3,
+              rx: 8,
+              ry: 8
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#374151', fontSize: 12, fontWeight: 'bold' }
+          }
+        });
+        break;
+      case 'EVENT':
+        shape = new shapes.standard.Circle({
+          ...baseOptions,
+          size: { width: 60, height: 60 },
+          attrs: {
+            body: {
+              fill: '#fef3c7',
+              stroke: '#d97706',
+              strokeWidth: 3
+            },
+            label: { ...baseOptions.attrs.label, text: label, fill: '#92400e', fontSize: 11, fontWeight: 'bold' }
+          }
+        });
+        break;
       case 'END':
         shape = new shapes.standard.Circle({
           ...baseOptions,
@@ -191,6 +292,7 @@ export class DiagramCanvasService {
         strokeWidth: 3,
         strokeLinecap: 'round',
         strokeLinejoin: 'round',
+        sourceMarker: null, // Sin marcador en el origen
         targetMarker: {
           type: 'path',
           d: 'M 10 -5 0 0 10 5 z',
@@ -327,6 +429,17 @@ public renderLaneBackgrounds(graph: dia.Graph, lanes: Lane[]): void {
         return { width: 80, height: 80 };
       case 'DECISION':
         return { width: 120, height: 120 };
+      case 'SYNCHRONIZATION':
+      case 'JOIN':
+        return { width: 160, height: 20 };
+      case 'FORK':
+        return { width: 20, height: 160 };
+      case 'DOCUMENT':
+        return { width: 100, height: 120 };
+      case 'SUBPROCESS':
+        return { width: 140, height: 70 };
+      case 'EVENT':
+        return { width: 60, height: 60 };
       case 'TASK':
       default:
         return { width: 140, height: 70 };

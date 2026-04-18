@@ -122,22 +122,63 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     this.freeTransform.render();
   }
 
-  private showLinkTools(linkView: dia.LinkView): void {
+private showLinkTools(linkView: dia.LinkView): void {
     this.clearTools();
 
+    // 🚩 1. El vector matemático que dibuja un círculo perfecto
+    const circlePath = 'M -7 0 a 7 7 0 1 0 14 0 a 7 7 0 1 0 -14 0';
+
+    // 🚩 2. EXTENDEMOS la clase de ORIGEN para obligar a JointJS a usar nuestro diseño
+    const CustomSourceArrowhead = linkTools.SourceArrowhead.extend({
+      options: {
+        markup: [{
+          tagName: 'path',
+          selector: 'arrowhead', // Nombre estricto interno
+          attributes: {
+            'd': circlePath,
+            'fill': '#38bdf8',       // Azul claro
+            'stroke': '#ffffff',     // Borde blanco
+            'stroke-width': 2,
+            'cursor': 'pointer'
+          }
+        }]
+      }
+    });
+
+    // 🚩 3. EXTENDEMOS la clase de DESTINO
+    const CustomTargetArrowhead = linkTools.TargetArrowhead.extend({
+      options: {
+        markup: [{
+          tagName: 'path',
+          selector: 'arrowhead',
+          attributes: {
+            'd': circlePath,
+            'fill': '#38bdf8',
+            'stroke': '#ffffff',
+            'stroke-width': 2,
+            'cursor': 'pointer'
+          }
+        }]
+      }
+    });
+
+    // 4. Inyectamos las herramientas al lienzo
     const toolsView = new dia.ToolsView({
       tools: [
         new linkTools.Vertices(),
         new linkTools.Segments(),
-        new linkTools.SourceArrowhead(),
-        new linkTools.TargetArrowhead(),
+        
+        // 🚩 Usamos las nuevas clases extendidas
+        new CustomSourceArrowhead(),
+        new CustomTargetArrowhead(),
+        
         new linkTools.Boundary(),
         new linkTools.Remove({ distance: 20 })
       ]
     });
+    
     linkView.addTools(toolsView);
   }
-
   // ==========================================
   // EVENTOS DEL LIENZO
   // ==========================================
@@ -390,7 +431,80 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     (shape as any).laneId = this.diagramCanvasService.getLaneIdByX(this.lanes, posX + nodeSize.width / 2) ?? 'default';
 
     this.graph.addCell(shape);
+
+    // Crear conexiones automáticas para elementos de sincronización
+    if (type === 'FORK') {
+      this.createForkConnections(shape);
+    } else if (type === 'SYNCHRONIZATION') {
+      this.createSynchronizationConnections(shape);
+    }
+
     this.infoMessage = `Nodo "${label}" agregado al lienzo.`;
+  }
+
+  private createForkConnections(forkNode: dia.Element): void {
+    // Crear 2 conexiones salientes desde el FORK
+    const forkX = forkNode.position().x;
+    const forkY = forkNode.position().y;
+    const forkWidth = forkNode.size().width;
+    const forkHeight = forkNode.size().height;
+
+    // Calcular posiciones asegurando que queden dentro del canvas
+    const targetX = Math.min(forkX + forkWidth + 50, this.diagramCanvasService.getCanvasWidth() - 150);
+    const targetY1 = Math.max(forkY - 80, 54);
+    const targetY2 = Math.min(forkY + forkHeight + 10, this.diagramCanvasService.getCanvasHeight() - 80);
+
+    // Primera conexión hacia arriba
+    const target1 = this.diagramCanvasService.createShape('TASK', 'Tarea 1', targetX, targetY1);
+    (target1 as any).nodeType = 'TASK';
+    (target1 as any).laneId = this.diagramCanvasService.getLaneIdByX(this.lanes, targetX) ?? 'default';
+    this.graph.addCell(target1);
+
+    const link1 = this.diagramCanvasService.createLink(forkNode, target1);
+    this.graph.addCell(link1);
+
+    // Segunda conexión hacia abajo (solo si hay espacio suficiente)
+    if (targetY2 - targetY1 > 100) {
+      const target2 = this.diagramCanvasService.createShape('TASK', 'Tarea 2', targetX, targetY2);
+      (target2 as any).nodeType = 'TASK';
+      (target2 as any).laneId = this.diagramCanvasService.getLaneIdByX(this.lanes, targetX) ?? 'default';
+      this.graph.addCell(target2);
+
+      const link2 = this.diagramCanvasService.createLink(forkNode, target2);
+      this.graph.addCell(link2);
+    }
+  }
+
+  private createSynchronizationConnections(syncNode: dia.Element): void {
+    // Crear 2 conexiones entrantes hacia la SYNCHRONIZATION
+    const syncX = syncNode.position().x;
+    const syncY = syncNode.position().y;
+    const syncHeight = syncNode.size().height;
+
+    // Calcular posiciones asegurando que queden dentro del canvas
+    const sourceX = Math.max(syncX - 200, 10);
+    const sourceY1 = Math.max(syncY - 80, 54);
+    const sourceY2 = Math.min(syncY + syncHeight + 10, this.diagramCanvasService.getCanvasHeight() - 80);
+
+    // Primera conexión desde arriba
+    const source1 = this.diagramCanvasService.createShape('TASK', 'Tarea A', sourceX, sourceY1);
+    (source1 as any).nodeType = 'TASK';
+    (source1 as any).laneId = this.diagramCanvasService.getLaneIdByX(this.lanes, sourceX) ?? 'default';
+    this.graph.addCell(source1);
+
+    const link1 = this.diagramCanvasService.createLink(source1, syncNode);
+    this.graph.addCell(link1);
+
+    // Segunda conexión desde abajo (solo si hay espacio suficiente)
+    if (sourceY2 - sourceY1 > 100) {
+      const source2 = this.diagramCanvasService.createShape('TASK', 'Tarea B', sourceX, sourceY2);
+      (source2 as any).nodeType = 'TASK';
+      (source2 as any).laneId = this.diagramCanvasService.getLaneIdByX(this.lanes, sourceX) ?? 'default';
+      this.graph.addCell(source2);
+
+      const link2 = this.diagramCanvasService.createLink(source2, syncNode);
+      this.graph.addCell(link2);
+    }
   }
 
   public startDraggingNode(nodeType: string, label: string, event: DragEvent): void {
