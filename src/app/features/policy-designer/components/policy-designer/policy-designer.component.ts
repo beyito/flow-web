@@ -25,7 +25,7 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private readonly policyDataService = inject(PolicyDataService);
   private readonly diagramCanvasService = inject(DiagramCanvasService);
   private readonly diagramStorageService = inject(DiagramStorageService);
-
+  private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   private graph: dia.Graph = this.diagramCanvasService.createGraph();
@@ -42,7 +42,9 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public newPolicyName = '';
   public newPolicyDescription = '';
   public infoMessage = 'Cargando politicas...';
-  public canManagePolicies = new AuthService().hasManagerRole();
+  public get canManagePolicies(): boolean {
+    return this.authService.hasManagerRole();
+  }
   public selectedSourceId: dia.Cell.ID | null = null;
   public selectedTargetId: dia.Cell.ID | null = null;
   public isConnectionMode = false;
@@ -859,10 +861,22 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 
   private async initializeDesigner(): Promise<void> {
-    await this.loadPolicyList();
-    this.restoreFromLocalStorage();
+    try {
+      // 1. Primero traemos la lista de la base de datos (sin forzar el renderizado aún)
+      this.policies = await this.policyDataService.getAllPolicies();
+      this.infoMessage = 'Lista de políticas cargada.';
+      
+      // 2. LUEGO restauramos el estado local (esto le dará un valor a selectedPolicyId)
+      this.restoreFromLocalStorage(); 
+      
+      // 3. AHORA SÍ, le decimos a Angular: "He terminado mis cálculos, por favor dibuja todo de golpe"
+      this.cdr.detectChanges(); 
+      
+    } catch (error) {
+      this.infoMessage = `Error cargando políticas: ${error}`;
+      this.cdr.detectChanges();
+    }
   }
-
   private createConnectionFromSelection(): void {
     if (!this.selectedSourceId || !this.selectedTargetId) {
       return;

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core'; // 1. Importa Injectable
+
 export interface AuthProfile {
   username: string;
   roles: string[];
@@ -86,6 +87,6 @@ export class AuthService {
   }
 
   public hasManagerRole(): boolean {
-    return this.hasRole('POLICY_MANAGER');
+    return this.hasRole('COMPANY_ADMIN')|| this.hasRole('ROLE_COMPANY_ADMIN');
   }
 }
