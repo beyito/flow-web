@@ -6,7 +6,7 @@ import { dia, shapes, linkTools, elementTools, ui } from '@joint/plus';
 import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
-import { Attachment, Lane, PolicyPayload, PolicySummary, FormField } from '../../models/policy-designer.models';
+import { Attachment, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
 import { LANE_COLORS, NODE_TEMPLATES } from '../../utils/policy-designer.constants';
 
 @Component({
@@ -63,6 +63,8 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public isFormDesignerOpen = false;
   public newElementName = '';
   public isRenaming = false;
+  public taskExecutionOrder: TaskExecutionOrder | null = null;
+  public showTaskOrder = false;
 
   public ngOnInit(): void {
     this.registerPaperEvents();
@@ -764,8 +766,26 @@ private showLinkTools(linkView: dia.LinkView): void {
     return labels[type] || type;
   }
 
-  public trackByFieldId(index: number, field: FormField): string {
-    return field.id;
+  public async getTaskExecutionOrder(): Promise<void> {
+    if (!this.selectedPolicyId) {
+      this.infoMessage = 'Selecciona una politica antes de ver el orden de tareas.';
+      return;
+    }
+
+    try {
+      this.taskExecutionOrder = await this.policyDataService.getTaskExecutionOrder(this.selectedPolicyId);
+      this.showTaskOrder = true;
+      this.infoMessage = `Orden de tareas calculado para "${this.taskExecutionOrder?.policyName}".`;
+    } catch (error) {
+      this.infoMessage = `Error al calcular el orden de tareas: ${error}`;
+      this.taskExecutionOrder = null;
+      this.showTaskOrder = false;
+    }
+  }
+
+  public hideTaskOrder(): void {
+    this.showTaskOrder = false;
+    this.taskExecutionOrder = null;
   }
 
   public editField(index: number): void {
@@ -920,5 +940,22 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.saveTimeout = setTimeout(() => {
       this.diagramStorageService.save(this.selectedPolicyId, this.graph, this.lanes);
     }, 500);
+  }
+
+  public trackByFieldId(index: number, field: FormField): string {
+    return field.id;
+  }
+
+  public trackByTaskId(index: number, task: any): string {
+    return task.nodeId;
+  }
+
+  public getDependencyLabels(dependencyIds: string[]): string {
+    if (!this.taskExecutionOrder) return '';
+
+    return dependencyIds.map(id => {
+      const task = this.taskExecutionOrder!.tasks.find(t => t.nodeId === id);
+      return task ? task.nodeLabel : id;
+    }).join(', ');
   }
 }

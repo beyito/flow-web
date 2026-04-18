@@ -53,6 +53,22 @@ export interface DiagramState {
   lanes: Lane[];
 }
 
+export interface TaskOrder {
+  nodeId: string;
+  nodeLabel: string;
+  nodeType: string;
+  order: number;
+  dependencies: string[];
+  laneId?: string;
+  laneName?: string;
+}
+
+export interface TaskExecutionOrder {
+  policyId: string;
+  policyName: string;
+  tasks: TaskOrder[];
+}
+
 export interface DesignerNodeTemplate {
   type: string;
   label: string;

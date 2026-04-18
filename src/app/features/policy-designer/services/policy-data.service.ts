@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { executeGraphql } from '../../../core/api/graphql-client';
-import { Lane, PolicyPayload, PolicySummary } from '../models/policy-designer.models';
+import { Lane, PolicyPayload, PolicySummary, TaskExecutionOrder } from '../models/policy-designer.models';
 
 @Injectable({ providedIn: 'root' })
 export class PolicyDataService {
@@ -62,5 +62,25 @@ export class PolicyDataService {
         }
       }
     `, { policyId, diagramJson, lanes });
+  }
+
+  public async getTaskExecutionOrder(policyId: string): Promise<TaskExecutionOrder | null> {
+    const response = await executeGraphql<{ getTaskExecutionOrder: TaskExecutionOrder | null }>(`
+      query GetTaskExecutionOrder($policyId: ID!) {
+        getTaskExecutionOrder(policyId: $policyId) {
+          policyId
+          policyName
+          tasks {
+            nodeId
+            nodeLabel
+            nodeType
+            order
+            dependencies
+          }
+        }
+      }
+    `, { policyId });
+
+    return response.getTaskExecutionOrder ?? null;
   }
 }

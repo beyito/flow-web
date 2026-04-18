@@ -21,6 +21,9 @@
         <button type="button" (click)="savePolicyGraph()" [disabled]="!selectedPolicyId">Guardar</button>
         <button type="button" (click)="newDiagram()">Nuevo</button>
       </div>
+      <button type="button" class="wide-button" (click)="getTaskExecutionOrder()" [disabled]="!selectedPolicyId">
+        Ver orden de tareas
+      </button>
     </section>
 
     <section class="block">
@@ -222,6 +225,35 @@
       <p class="info-detail"><strong>Origen:</strong> {{ selectedSourceId ?? 'ninguno' }}</p>
       <p class="info-detail"><strong>Destino:</strong> {{ selectedTargetId ?? 'ninguno' }}</p>
       <p class="info-detail"><strong>Modo conexion:</strong> {{ isConnectionMode ? 'activo' : 'inactivo' }}</p>
+    </section>
+
+    <!-- Orden de tareas -->
+    <section class="block" *ngIf="showTaskOrder && taskExecutionOrder">
+      <div class="task-order-header">
+        <h3>Orden de Ejecución de Tareas</h3>
+        <button type="button" class="close-btn" (click)="hideTaskOrder()">×</button>
+      </div>
+      <p class="policy-name"><strong>Política:</strong> {{ taskExecutionOrder.policyName }}</p>
+
+      <div class="task-list">
+        <div class="task-item" *ngFor="let task of taskExecutionOrder.tasks; trackBy: trackByTaskId">
+          <div class="task-order-number">{{ task.order }}</div>
+          <div class="task-info">
+            <div class="task-label">{{ task.nodeLabel }}</div>
+            <div class="task-type">{{ task.nodeType }}</div>
+            <div class="task-lane" *ngIf="task.laneName">
+              <small><strong>Carril:</strong> {{ task.laneName }}</small>
+            </div>
+            <div class="task-dependencies" *ngIf="task.dependencies.length > 0">
+              <small>Depende de: {{ getDependencyLabels(task.dependencies) }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-order-summary" *ngIf="taskExecutionOrder.tasks.length === 0">
+        <p>No se encontraron tareas en el diagrama.</p>
+      </div>
     </section>
   </aside>
 
