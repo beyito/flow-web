@@ -1,0 +1,31 @@
+<section class="admin-shell">
+  <div class="panel">
+    <h2>Panel Admin de Software</h2>
+    <p>Desde aquí puedes crear nuevas empresas y asignar administradores para cada empresa.</p>
+
+    <div class="panel-card">
+      <h3>Crear empresa</h3>
+      <label>Nombre de empresa</label>
+      <input type="text" [(ngModel)]="newCompanyName" placeholder="Nombre de empresa" />
+      <button type="button" (click)="createCompany()" [disabled]="companyLoading">Crear empresa</button>
+      <p class="message" *ngIf="companyMessage">{{ companyMessage }}</p>
+    </div>
+
+    <div class="panel-card">
+      <h3>Crear administrador de empresa</h3>
+      <label>Empresa</label>
+      <select [(ngModel)]="adminCompany">
+        <option *ngFor="let company of companies" [value]="company.name">{{ company.name }}</option>
+      </select>
+
+      <label>Usuario</label>
+      <input type="text" [(ngModel)]="adminUsername" placeholder="Nombre de usuario" />
+
+      <label>Contraseña</label>
+      <input type="password" [(ngModel)]="adminPassword" placeholder="Contraseña" />
+
+      <button type="button" (click)="createCompanyAdmin()" [disabled]="adminLoading">Crear admin de empresa</button>
+      <p class="message" *ngIf="adminMessage">{{ adminMessage }}</p>
+    </div>
+  </div>
+</section>

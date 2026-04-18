@@ -4,13 +4,21 @@ export interface GraphqlResponse<T> {
 }
 
 const GRAPHQL_URL = 'http://localhost:8080/graphql';
+const AUTH_TOKEN_KEY = 'flow-web-auth-token';
 
 export async function executeGraphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(GRAPHQL_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ query, variables })
   });
 

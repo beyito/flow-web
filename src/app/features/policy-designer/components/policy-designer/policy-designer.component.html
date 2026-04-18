@@ -7,7 +7,8 @@
       <input type="text" [value]="newPolicyName" (input)="newPolicyName = $any($event.target).value" placeholder="Diagrama de aprobacion" />
       <label>Descripcion</label>
       <input type="text" [value]="newPolicyDescription" (input)="newPolicyDescription = $any($event.target).value" placeholder="Por calles / roles" />
-      <button type="button" (click)="createPolicy()">Crear politica</button>
+      <button type="button" (click)="createPolicy()" [disabled]="!canManagePolicies">Crear politica</button>
+      <p *ngIf="!canManagePolicies" class="info-text">Solo gestores de políticas pueden crear nuevas políticas.</p>
     </section>
 
     <section class="block">

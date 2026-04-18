@@ -6,6 +6,7 @@ import { dia, shapes, linkTools, elementTools, ui } from '@joint/plus';
 import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
+import { AuthService } from '../../../../auth.service';
 import { Attachment, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
 import { LANE_COLORS, NODE_TEMPLATES } from '../../utils/policy-designer.constants';
 
@@ -40,6 +41,7 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public newPolicyName = '';
   public newPolicyDescription = '';
   public infoMessage = 'Cargando politicas...';
+  public canManagePolicies = new AuthService().hasManagerRole();
   public selectedSourceId: dia.Cell.ID | null = null;
   public selectedTargetId: dia.Cell.ID | null = null;
   public isConnectionMode = false;
@@ -363,6 +365,11 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 
   public async createPolicy(): Promise<void> {
+    if (!this.canManagePolicies) {
+      this.infoMessage = 'No tienes permiso para crear políticas de negocio.';
+      return;
+    }
+
     if (!this.newPolicyName.trim()) {
       this.infoMessage = 'Debes ingresar un nombre para la politica.';
       return;

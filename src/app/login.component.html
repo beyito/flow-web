@@ -1,0 +1,36 @@
+<section class="login-shell">
+  <div class="login-card">
+    <h2>{{ isRegisterMode ? 'Registro de usuario' : 'Login' }}</h2>
+
+    <label>Usuario</label>
+    <input type="text" [(ngModel)]="username" placeholder="usuario" />
+
+    <label>Contraseña</label>
+    <input type="password" [(ngModel)]="password" placeholder="contraseña" />
+
+    <div *ngIf="isRegisterMode">
+      <label>Empresa</label>
+      <input type="text" [(ngModel)]="company" placeholder="Empresa padre" />
+
+      <label>Empresa principal</label>
+      <input type="text" [(ngModel)]="parentCompany" placeholder="Empresa principal" />
+
+      <label>Rol</label>
+      <select [(ngModel)]="role">
+        <option value="FUNCTIONARY">Funcionario</option>
+        <option value="SOFTWARE_ADMIN">Admin software (solo primer registro)</option>
+      </select>
+    </div>
+
+    <div class="button-row">
+      <button type="button" (click)="isRegisterMode ? register() : login()" [disabled]="loading">
+        {{ isRegisterMode ? 'Registrar' : 'Entrar' }}
+      </button>
+      <button type="button" class="secondary" (click)="isRegisterMode = !isRegisterMode" [disabled]="loading">
+        {{ isRegisterMode ? 'Tengo cuenta' : 'Registrarme' }}
+      </button>
+    </div>
+
+    <p class="message" *ngIf="message">{{ message }}</p>
+  </div>
+</section>

@@ -1,0 +1,35 @@
+<section class="admin-shell">
+  <div class="panel">
+    <h2>Panel Admin de Empresa</h2>
+    <p>Desde aquí puedes crear áreas de calle y funcionarios asignados a esas áreas.</p>
+
+    <div class="panel-card">
+      <h3>Crear área</h3>
+      <label>Nombre del área</label>
+      <input type="text" [(ngModel)]="newAreaName" placeholder="Nombre del área" />
+
+      <label>Calles (separadas por coma)</label>
+      <input type="text" [(ngModel)]="newAreaStreets" placeholder="Calle 1, Calle 2" />
+
+      <button type="button" (click)="createArea()" [disabled]="areaLoading">Crear área</button>
+      <p class="message" *ngIf="areaMessage">{{ areaMessage }}</p>
+    </div>
+
+    <div class="panel-card">
+      <h3>Crear funcionario</h3>
+      <label>Área</label>
+      <select [(ngModel)]="funcArea">
+        <option *ngFor="let area of areas" [value]="area.name">{{ area.name }}</option>
+      </select>
+
+      <label>Usuario</label>
+      <input type="text" [(ngModel)]="funcUsername" placeholder="Nombre de usuario" />
+
+      <label>Contraseña</label>
+      <input type="password" [(ngModel)]="funcPassword" placeholder="Contraseña" />
+
+      <button type="button" (click)="createFunctionary()" [disabled]="funcLoading">Crear funcionario</button>
+      <p class="message" *ngIf="funcMessage">{{ funcMessage }}</p>
+    </div>
+  </div>
+</section>
