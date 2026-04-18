@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PolicyDesignerComponent } from './features/policy-designer/components/policy-designer/policy-designer.component';
-import { LoginComponent } from './login.component';
+import { LoginComponent } from './features/login/login.component';
 import { AdminSoftwareComponent } from './features/admin-software/admin-software.component';
 import { AdminCompanyComponent } from './features/admin-company/admin-company.component';
 import { AuthService } from './auth.service';
@@ -20,6 +20,7 @@ import { AuthService } from './auth.service';
       <app-admin-software *ngIf="isSoftwareAdmin"></app-admin-software>
       <app-admin-company *ngIf="isCompanyAdmin"></app-admin-company>
       <app-policy-designer *ngIf="isFunctionary"></app-policy-designer>
+      
     </ng-container>
     <ng-template #loginTemplate>
       <app-login></app-login>
