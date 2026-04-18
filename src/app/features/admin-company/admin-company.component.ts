@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, AuthProfile } from '../../auth.service';
-
+import { RouterModule } from '@angular/router';
 interface AreaInfo {
   id: string;
   name: string;
@@ -12,7 +12,7 @@ interface AreaInfo {
 @Component({
   selector: 'app-admin-company',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './admin-company.component.html',
   styleUrls: ['../panel.scss','../../../../src/styles.scss']
 

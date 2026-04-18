@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core'; // 1. Importa Injectable
 export interface AuthProfile {
   username: string;
   roles: string[];
@@ -8,6 +9,9 @@ export interface AuthProfile {
 const AUTH_TOKEN_KEY = 'flow-web-auth-token';
 const AUTH_PROFILE_KEY = 'flow-web-auth-profile';
 
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
   private profile: AuthProfile | null = null;
 

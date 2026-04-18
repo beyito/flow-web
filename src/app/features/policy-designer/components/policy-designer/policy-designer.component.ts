@@ -9,11 +9,12 @@ import { PolicyDataService } from '../../services/policy-data.service';
 import { AuthService } from '../../../../auth.service';
 import { Attachment, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
 import { LANE_COLORS, NODE_TEMPLATES } from '../../utils/policy-designer.constants';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-policy-designer',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgFor, NgIf],
+  imports: [CommonModule, FormsModule, NgFor, NgIf, RouterModule],
   templateUrl: './policy-designer.component.html',
   styleUrl: './policy-designer.component.scss'
 })
