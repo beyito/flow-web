@@ -1,0 +1,176 @@
+.admin-shell {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: #ffffff;
+  width: 100%;
+  max-width: 850px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #111827;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  > p {
+    color: #6b7280;
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+  }
+}
+
+.panel-card {
+  background: #f8fafc; // Gris muy suave con un tono azulado
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.75rem;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb; // Azul corporativo
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #2563eb; // Azul corporativo
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+
+    &:hover:not(:disabled) {
+      background-color: #1d4ed8;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    &:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+  }
+
+  .message {
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #059669;
+    background-color: #d1fae5;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 4px solid #10b981;
+  }
+}
+
+/* Ajustes para móviles */
+@media (max-width: 640px) {
+  .panel {
+    padding: 1.5rem;
+  }
+  
+  .panel-card {
+    padding: 1.25rem;
+  }
+}
+/* Botón para ir hacia adelante (Ej: Al diseñador) */
+.btn-nav {
+  background-color: #111827; // Gris muy oscuro casi negro, muy elegante
+  color: #ffffff;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: #374151;
+    transform: translateY(-1px);
+  }
+}
+
+/* Botón para ir hacia atrás (Ej: Volver al admin) */
+.btn-nav-back {
+  display: inline-block;
+  background-color: transparent;
+  color: #4b5563;
+  padding: 0;
+  margin-bottom: 1rem;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #111827;
+    text-decoration: underline;
+  }
+}
+
+/* Ajuste móvil para el panel del admin */
+@media (max-width: 768px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+}

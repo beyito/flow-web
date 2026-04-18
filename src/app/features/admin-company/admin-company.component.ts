@@ -13,7 +13,9 @@ interface AreaInfo {
   selector: 'app-admin-company',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './admin-company.component.html'
+  templateUrl: './admin-company.component.html',
+  styleUrls: ['../panel.scss','../../../../src/styles.scss']
+
 })
 export class AdminCompanyComponent {
   private readonly authService = new AuthService();

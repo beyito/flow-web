@@ -12,7 +12,9 @@ interface CompanyInfo {
   selector: 'app-admin-software',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './admin-software.component.html'
+  templateUrl: './admin-software.component.html',
+  styleUrls: ['../panel.scss','../../../../src/styles.scss']
+
 })
 export class AdminSoftwareComponent {
   private readonly authService = new AuthService();
