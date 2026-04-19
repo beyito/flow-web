@@ -1,6 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '../../../auth.service';
-import { PendingTaskDto, ProcessInstance, StartablePolicyDto, TaskInstance } from '../models/execution.models';
+import {
+  PendingTaskDto,
+  ProcessInstance,
+  StartablePolicyDto,
+  TaskDetailDto,
+  TaskInstance
+} from '../models/execution.models';
 
 @Injectable({
   providedIn: 'root'
@@ -63,11 +69,39 @@ export class ExecutionService {
     return response.json();
   }
 
+  public async getTaskDetails(taskInstanceId: string): Promise<TaskDetailDto> {
+    const response = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(taskInstanceId)}`, {
+      headers: this.authHeaders
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'No se pudo cargar el detalle de la tarea');
+    }
+
+    return response.json();
+  }
+
+  public async takeTask(taskInstanceId: string): Promise<TaskInstance> {
+    const response = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(taskInstanceId)}/take`, {
+      method: 'POST',
+      headers: this.authHeaders
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'No se pudo tomar la tarea');
+    }
+
+    return response.json();
+  }
+
   public async completeTask(taskInstanceId: string, formData: unknown): Promise<TaskInstance> {
+    const payload = typeof formData === 'string' ? formData : JSON.stringify(formData);
     const response = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(taskInstanceId)}/complete`, {
       method: 'POST',
       headers: this.authHeaders,
-      body: JSON.stringify({ formData: JSON.stringify(formData) })
+      body: JSON.stringify({ formData: payload })
     });
 
     if (!response.ok) {

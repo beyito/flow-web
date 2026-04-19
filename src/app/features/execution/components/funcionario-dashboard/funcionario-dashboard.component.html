@@ -48,6 +48,7 @@
           <tr>
             <th>Proceso</th>
             <th>Tarea</th>
+            <th>Estado</th>
             <th>Creada</th>
           </tr>
         </thead>
@@ -56,6 +57,9 @@
             <tr (click)="openTask(task)">
               <td>{{ task.processName }}</td>
               <td>{{ task.taskName }}</td>
+              <td>
+                <span [class]="statusClass(task.status)">{{ statusLabel(task.status) }}</span>
+              </td>
               <td>{{ task.createdAt | date: 'short' }}</td>
             </tr>
           }

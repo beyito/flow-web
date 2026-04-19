@@ -49,10 +49,7 @@ export class FuncionarioDashboardComponent implements OnInit {
       ]);
       this.startablePolicies = startablePolicies;
       this.pendingTasks = pendingTasks;
-      console.log('Dashboard cargado:', {
-        startablePolicies: startablePolicies.length,
-        pendingTasks: pendingTasks.length
-      });
+      console.log('Dashboard data loaded:', { startablePolicies, pendingTasks });
     } catch (error) {
       this.startablePolicies = [];
       this.pendingTasks = [];
@@ -66,27 +63,49 @@ export class FuncionarioDashboardComponent implements OnInit {
   public async startProcess(policy: StartablePolicyDto): Promise<void> {
     this.startingPolicyId = policy.id;
     this.message = '';
-    
-    // 🚩 1. Le decimos a Angular que pinte el botón como "Iniciando..." de inmediato
     this.cdr.detectChanges(); 
 
     try {
       await this.executionService.startProcess(policy.id);
       this.message = `Proceso "${policy.name}" iniciado correctamente.`;
-      
-      // Recargamos los datos (esto internamente ya llama a detectChanges)
-      await this.loadDashboardData(); 
+      await this.loadDashboardData();
     } catch (error) {
       this.message = error instanceof Error ? error.message : 'No se pudo iniciar el proceso';
     } finally {
-      this.startingPolicyId = null; // Volvemos a habilitar el botón
-      
-      // 🚩 2. LA SOLUCIÓN AL NG0100: Le avisamos a Angular que la variable cambió a null
+      this.startingPolicyId = null;
       this.cdr.detectChanges(); 
     }
   }
 
   public openTask(task: PendingTaskDto): void {
     void this.router.navigate(['/execution/task', task.taskInstanceId]);
+  }
+
+  public statusLabel(status: string): string {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return 'En Proceso';
+      case 'COMPLETED':
+        return 'Hecho';
+      case 'REJECTED':
+        return 'Rechazado';
+      case 'PENDING':
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  public statusClass(status: string): string {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return 'badge badge-progress';
+      case 'COMPLETED':
+        return 'badge badge-completed';
+      case 'REJECTED':
+        return 'badge badge-rejected';
+      case 'PENDING':
+      default:
+        return 'badge badge-pending';
+    }
   }
 }

@@ -1,5 +1,5 @@
 export type ProcessStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
 export interface ProcessInstance {
   id: string;
@@ -30,6 +30,7 @@ export interface PendingTaskDto {
   taskId: string;
   taskName: string;
   laneId: string;
+  status: TaskStatus;
   createdAt: string;
 }
 
@@ -37,4 +38,24 @@ export interface StartablePolicyDto {
   id: string;
   name: string;
   description?: string;
+}
+
+export interface TaskFormField {
+  id?: string;
+  name?: string;
+  type: 'text' | 'number' | 'select' | 'checkbox' | 'boolean' | 'date' | 'textarea';
+  label: string;
+  required?: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+export interface TaskDetailDto {
+  id: string;
+  taskName: string;
+  processName: string;
+  status: TaskStatus;
+  description: string;
+  formSchema: string;
+  formData?: string | null;
 }

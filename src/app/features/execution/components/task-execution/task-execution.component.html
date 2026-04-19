@@ -1,8 +1,110 @@
-<section class="task-execution">
-  <h2>Ejecucion de Tarea</h2>
-  @if (taskId) {
-    <p>TaskInstance ID: {{ taskId }}</p>
+<section class="task-execution-page">
+  @if (loading) {
+    <div class="card">
+      <p>Cargando detalle de tarea...</p>
+    </div>
+  } @else if (!taskDetail) {
+    <div class="card">
+      <p>No se encontro informacion de la tarea.</p>
+      @if (message) {
+        <p class="message">{{ message }}</p>
+      }
+    </div>
   } @else {
-    <p>No se encontro una tarea para ejecutar.</p>
+    <article class="card">
+      <header class="task-header">
+        <div>
+          <h2>{{ taskDetail.processName }}</h2>
+          <h3>{{ taskDetail.taskName }}</h3>
+        </div>
+        <span [class]="statusClass(taskDetail.status)">{{ statusLabel(taskDetail.status) }}</span>
+      </header>
+
+      @if (taskDetail.description) {
+        <p class="task-description">{{ taskDetail.description }}</p>
+      }
+
+      @if (taskDetail.status === 'PENDING') {
+        <div class="actions">
+          <button class="btn btn-primary" type="button" (click)="markAsInProgress()" [disabled]="takingTask">
+            @if (takingTask) {
+              Poniendo en proceso...
+            } @else {
+              Tomar Tarea / Poner en Proceso
+            }
+          </button>
+        </div>
+      }
+
+      @if (taskDetail.status === 'IN_PROGRESS') {
+        <form [formGroup]="formGroup" class="dynamic-form" (ngSubmit)="submitTask()">
+          @for (field of formSchemaFields; track fieldName(field, $index)) {
+            <div class="form-field">
+              <label [for]="fieldName(field, $index)">
+                {{ field.label }}
+                @if (field.required) {
+                  <span class="required">*</span>
+                }
+              </label>
+
+              @switch (field.type) {
+                @case ('textarea') {
+                  <textarea [id]="fieldName(field, $index)" [formControlName]="fieldName(field, $index)" [placeholder]="field.placeholder || ''" rows="4"></textarea>
+                }
+                @case ('select') {
+                  <select [id]="fieldName(field, $index)" [formControlName]="fieldName(field, $index)">
+                    <option value="">Selecciona una opcion</option>
+                    @for (option of field.options || []; track option) {
+                      <option [value]="option">{{ option }}</option>
+                    }
+                  </select>
+                }
+                @case ('checkbox') {
+                  <input [id]="fieldName(field, $index)" type="checkbox" [formControlName]="fieldName(field, $index)" />
+                }
+                @case ('boolean') {
+                  <input [id]="fieldName(field, $index)" type="checkbox" [formControlName]="fieldName(field, $index)" />
+                }
+                @default {
+                  <input [id]="fieldName(field, $index)" [type]="field.type || 'text'" [formControlName]="fieldName(field, $index)" [placeholder]="field.placeholder || ''" />
+                }
+              }
+
+              @if (shouldShowError(field, $index)) {
+                <small class="error-text">Este campo es requerido.</small>
+              }
+            </div>
+          }
+
+          <div class="actions">
+            <button 
+  class="btn btn-success" 
+  type="submit" 
+  [disabled]="completingTask || formGroup.invalid">
+  {{ completingTask ? 'Completando...' : 'Completar Tarea' }}
+</button>
+
+@if (formGroup.invalid && formGroup.touched) {
+  <p class="error-hint">⚠️ Debes completar todos los campos obligatorios antes de continuar.</p>
+}
+          </div>
+        </form>
+      }
+
+      @if (taskDetail.status === 'COMPLETED') {
+        <section class="readonly-result">
+          <h4>Respuestas registradas</h4>
+          @if (taskDetail.formData) {
+            <pre>{{ taskDetail.formData }}</pre>
+          } @else {
+            <p>Esta tarea no tiene respuestas guardadas.</p>
+          }
+        </section>
+      }
+
+      @if (message) {
+        <p class="message">{{ message }}</p>
+      }
+    </article>
   }
 </section>
