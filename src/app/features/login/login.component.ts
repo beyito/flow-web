@@ -52,7 +52,7 @@ export class LoginComponent {
         this.router.navigate(['/admin-empresa']);
       } else {
         // Por descarte, si no es admin, asume que es funcionario/diseñador
-        this.router.navigate(['/disenador']);
+        this.router.navigate(['/funcionario-dashboard']);
       }
 
     } catch (error) {

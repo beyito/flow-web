@@ -1,0 +1,75 @@
+.task-inbox {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.task-list,
+.task-detail {
+  border: 1px solid #d9d9d9;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.task-list header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+li {
+  border: 1px solid #e4e4e4;
+  border-radius: 0.4rem;
+  padding: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+li.selected {
+  border-color: #2e7d32;
+  background: #f0faf1;
+}
+
+.hint {
+  color: #5f6368;
+}
+
+.message {
+  margin-top: 1rem;
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+button {
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: #2e7d32;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .task-inbox {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,52 @@
+<div class="task-inbox">
+  <section class="task-list">
+    <header>
+      <h2>Bandeja de Tareas</h2>
+      <button type="button" (click)="loadMyTasks()" [disabled]="loading">Recargar</button>
+    </header>
+
+    @if (loading) {
+      <p class="hint">Cargando tareas...</p>
+    } @else {
+      @if (pendingTasks.length === 0) {
+        <p class="hint">No hay tareas pendientes para tu area.</p>
+      } @else {
+        <ul>
+          @for (task of pendingTasks; track task.taskInstanceId) {
+            <li
+              (click)="selectTask(task)"
+              [class.selected]="selectedTask?.taskInstanceId === task.taskInstanceId">
+              <strong>{{ task.taskName }}</strong>
+              <span>{{ task.processName }}</span>
+              <small>{{ task.createdAt | date: 'short' }}</small>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+
+  <section class="task-detail">
+    @if (selectedTask) {
+      <h3>Detalle de Tarea</h3>
+      <p><strong>Proceso:</strong> {{ selectedTask.processName }}</p>
+      <p><strong>Tarea:</strong> {{ selectedTask.taskName }}</p>
+      <p><strong>Carril:</strong> {{ selectedTask.laneId }}</p>
+      <p><strong>Creada:</strong> {{ selectedTask.createdAt | date: 'short' }}</p>
+
+      <button type="button" (click)="completeSelectedTask()" [disabled]="completing">
+        @if (completing) {
+          Completando...
+        } @else {
+          Completar Tarea
+        }
+      </button>
+    } @else {
+      <p class="hint">Selecciona una tarea para ver su detalle.</p>
+    }
+
+    @if (message) {
+      <p class="message">{{ message }}</p>
+    }
+  </section>
+</div>

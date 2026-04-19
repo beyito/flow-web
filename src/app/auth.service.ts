@@ -5,6 +5,8 @@ export interface AuthProfile {
   roles: string[];
   company: string;
   parentCompany: string;
+  area: string;
+  laneId: string;
 }
 
 const AUTH_TOKEN_KEY = 'flow-web-auth-token';
@@ -54,7 +56,9 @@ export class AuthService {
       username: data.username,
       roles: data.roles || [],
       company: data.company || '',
-      parentCompany: data.parentCompany || ''
+      parentCompany: data.parentCompany || '',
+      area: data.area || '',
+      laneId: data.laneId || data.area || ''
     };
     this.profile = profile;
     localStorage.setItem(AUTH_PROFILE_KEY, JSON.stringify(profile));
@@ -88,5 +92,9 @@ export class AuthService {
 
   public hasManagerRole(): boolean {
     return this.hasRole('COMPANY_ADMIN')|| this.hasRole('ROLE_COMPANY_ADMIN');
+  }
+
+  public getCurrentLaneId(): string {
+    return this.profile?.laneId?.trim() || this.profile?.area?.trim() || '';
   }
 }

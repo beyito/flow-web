@@ -4,12 +4,13 @@ export interface PolicySummary {
   description?: string;
 }
 
-export interface Lane {
+export interface CompanyArea {
   id: string;
   name: string;
   color: string;
-  x: number;
 }
+
+export type Lane = CompanyArea & { x: number };
 
 export interface Attachment {
   id: string;

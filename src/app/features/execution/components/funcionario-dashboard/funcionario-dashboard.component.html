@@ -1,0 +1,66 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <h2>Panel del Funcionario</h2>
+    <button type="button" (click)="loadDashboardData()" [disabled]="loading">Recargar</button>
+  </header>
+
+  @if (message) {
+    <p class="message">{{ message }}</p>
+  }
+
+  <section class="panel">
+    <h3>Procesos Disponibles</h3>
+    @if (loading) {
+      <p class="hint">Cargando procesos...</p>
+    } @else if (startablePolicies.length === 0) {
+      <p class="hint">No hay procesos que puedas iniciar en tu area.</p>
+    } @else {
+      <div class="policy-grid">
+        @for (policy of startablePolicies; track policy.id) {
+          <article class="policy-card">
+            <h4>{{ policy.name }}</h4>
+            <p>{{ policy.description || 'Sin descripcion' }}</p>
+            <button
+              type="button"
+              [disabled]="startingPolicyId === policy.id"
+              (click)="startProcess(policy)">
+              @if (startingPolicyId === policy.id) {
+                Iniciando...
+              } @else {
+                Iniciar Proceso
+              }
+            </button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="panel">
+    <h3>Bandeja de Entrada</h3>
+    @if (loading) {
+      <p class="hint">Cargando tareas...</p>
+    } @else if (pendingTasks.length === 0) {
+      <p class="hint">No tienes tareas pendientes.</p>
+    } @else {
+      <table class="tasks-table">
+        <thead>
+          <tr>
+            <th>Proceso</th>
+            <th>Tarea</th>
+            <th>Creada</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (task of pendingTasks; track task.taskInstanceId) {
+            <tr (click)="openTask(task)">
+              <td>{{ task.processName }}</td>
+              <td>{{ task.taskName }}</td>
+              <td>{{ task.createdAt | date: 'short' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>

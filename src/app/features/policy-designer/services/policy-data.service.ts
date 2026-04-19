@@ -64,7 +64,7 @@ export class PolicyDataService {
     `, { policyId, diagramJson, lanes });
   }
 
-  public async getTaskExecutionOrder(policyId: string): Promise<TaskExecutionOrder | null> {
+ public async getTaskExecutionOrder(policyId: string): Promise<TaskExecutionOrder | null> {
     const response = await executeGraphql<{ getTaskExecutionOrder: TaskExecutionOrder | null }>(`
       query GetTaskExecutionOrder($policyId: ID!) {
         getTaskExecutionOrder(policyId: $policyId) {
@@ -76,6 +76,8 @@ export class PolicyDataService {
             nodeType
             order
             dependencies
+            laneId
+            laneName
           }
         }
       }

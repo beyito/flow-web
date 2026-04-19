@@ -7,9 +7,10 @@ import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
 import { AuthService } from '../../../../auth.service';
-import { Attachment, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
-import { LANE_COLORS, NODE_TEMPLATES } from '../../utils/policy-designer.constants';
+import { Attachment, CompanyArea, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
+import { NODE_TEMPLATES } from '../../utils/policy-designer.constants';
 import { RouterModule } from '@angular/router';
+import { CompanyAreaService } from '../../services/company-area.service';
 
 @Component({
   selector: 'app-policy-designer',
@@ -26,6 +27,7 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private readonly diagramCanvasService = inject(DiagramCanvasService);
   private readonly diagramStorageService = inject(DiagramStorageService);
   private readonly authService = inject(AuthService);
+  private readonly companyAreaService = inject(CompanyAreaService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   private graph: dia.Graph = this.diagramCanvasService.createGraph();
@@ -49,7 +51,8 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   public selectedTargetId: dia.Cell.ID | null = null;
   public isConnectionMode = false;
   public lanes: Lane[] = [];
-  public newLaneName = '';
+  public availableAreas: CompanyArea[] = [];
+  public selectedAreaId = '';
   public isCanvasDragOver = false;
   public selectedElementId: dia.Cell.ID | null = null;
   public selectedElementType: 'node' | 'link' | null = null;
@@ -407,21 +410,33 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 
   public addLane(): void {
-    if (!this.newLaneName.trim()) {
-      this.infoMessage = 'Debes ingresar un nombre para la calle.';
+    if (!this.selectedAreaId) {
+      this.infoMessage = 'Debes seleccionar un area para agregar una calle.';
+      return;
+    }
+
+    const selectedArea = this.availableAreas.find((area) => area.id === this.selectedAreaId);
+    if (!selectedArea) {
+      this.infoMessage = 'El area seleccionada no es valida.';
+      return;
+    }
+
+    const laneId = selectedArea.name;
+    if (this.lanes.some((lane) => lane.id === laneId)) {
+      this.infoMessage = `La calle "${selectedArea.name}" ya fue agregada.`;
       return;
     }
 
     const lane: Lane = {
-      id: `lane-${Date.now()}`,
-      name: this.newLaneName.trim(),
-      color: LANE_COLORS[this.lanes.length % LANE_COLORS.length],
+      id: laneId,
+      name: selectedArea.name,
+      color: selectedArea.color,
       x: 0
     };
 
     this.lanes = this.diagramCanvasService.recalculateLanePositions([...this.lanes, lane]);
-    this.newLaneName = '';
     this.diagramCanvasService.renderLaneBackgrounds(this.graph, this.lanes);
+    this.selectedAreaId = '';
     this.infoMessage = `Calle "${lane.name}" agregada.`;
     this.scheduleLocalSave();
   }
@@ -862,6 +877,7 @@ private showLinkTools(linkView: dia.LinkView): void {
 
   private async initializeDesigner(): Promise<void> {
     try {
+      await this.loadCompanyAreas();
       // 1. Primero traemos la lista de la base de datos (sin forzar el renderizado aún)
       this.policies = await this.policyDataService.getAllPolicies();
       this.infoMessage = 'Lista de políticas cargada.';
@@ -877,6 +893,16 @@ private showLinkTools(linkView: dia.LinkView): void {
       this.cdr.detectChanges();
     }
   }
+
+  private async loadCompanyAreas(): Promise<void> {
+    try {
+      this.availableAreas = await this.companyAreaService.getCompanyAreas();
+    } catch (error) {
+      this.availableAreas = [];
+      this.infoMessage = error instanceof Error ? error.message : 'No se pudieron cargar las areas de la empresa.';
+    }
+  }
+
   private createConnectionFromSelection(): void {
     if (!this.selectedSourceId || !this.selectedTargetId) {
       return;
@@ -913,7 +939,8 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.selectedSourceId = null;
     this.selectedTargetId = null;
     this.isConnectionMode = false;
-    this.lanes = this.diagramCanvasService.recalculateLanePositions(policy.lanes ?? []);
+    const normalizedLanes = this.normalizeLanesFromAreas(policy.lanes ?? []);
+    this.lanes = this.diagramCanvasService.recalculateLanePositions(normalizedLanes);
     this.diagramCanvasService.renderPolicy(this.graph, policy, this.lanes);
     this.diagramStorageService.clear();
   }
@@ -927,7 +954,8 @@ private showLinkTools(linkView: dia.LinkView): void {
     try {
       this.selectedPolicyId = state.policyId;
       this.isConnectionMode = false;
-      this.lanes = this.diagramCanvasService.recalculateLanePositions(state.lanes ?? []);
+      const normalizedLanes = this.normalizeLanesFromAreas(state.lanes ?? []);
+      this.lanes = this.diagramCanvasService.recalculateLanePositions(normalizedLanes);
       this.graph.clear();
       this.diagramCanvasService.renderLaneBackgrounds(this.graph, this.lanes);
 
@@ -952,6 +980,29 @@ private showLinkTools(linkView: dia.LinkView): void {
     if (clearStorage) {
       this.diagramStorageService.clear();
     }
+  }
+
+  private normalizeLanesFromAreas(sourceLanes: Lane[]): Lane[] {
+    if (this.availableAreas.length === 0) {
+      return sourceLanes;
+    }
+
+    return sourceLanes
+      .map((lane) => {
+        const matchedArea = this.availableAreas.find(
+          (area) => area.id === lane.id || area.name === lane.id || area.name === lane.name
+        );
+        if (!matchedArea) {
+          return null;
+        }
+        return {
+          id: matchedArea.name,
+          name: matchedArea.name,
+          color: matchedArea.color,
+          x: lane.x ?? 0
+        } as Lane;
+      })
+      .filter((lane): lane is Lane => lane !== null);
   }
 
   private scheduleLocalSave(): void {
@@ -981,3 +1032,4 @@ private showLinkTools(linkView: dia.LinkView): void {
     }).join(', ');
   }
 }
+

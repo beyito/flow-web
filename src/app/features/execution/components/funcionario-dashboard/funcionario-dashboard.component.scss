@@ -1,0 +1,199 @@
+/* Variables de color para mantener consistencia */
+$bg-app: #f8fafc;
+$panel-bg: #ffffff;
+$text-main: #0f172a;
+$text-muted: #64748b;
+$primary: #4f46e5;      /* Color índigo principal */
+$primary-hover: #4338ca;
+$border-color: #e2e8f0;
+
+/* Contenedor principal */
+.dashboard {
+  padding: 2rem;
+  display: grid;
+  gap: 1.5rem;
+  background-color: $bg-app;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Cabecera del Dashboard */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $text-main;
+  }
+
+  button {
+    background-color: $panel-bg;
+    color: $text-main;
+    border: 1px solid $border-color;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+    &:hover:not(:disabled) {
+      background-color: #f1f5f9;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Mensajes del sistema (Toasts/Alerts) */
+.message {
+  background-color: #eff6ff;
+  color: #1e3a8a;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #3b82f6;
+  font-weight: 500;
+  margin: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Paneles blancos */
+.panel {
+  background: $panel-bg;
+  border: 1px solid $border-color;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-main;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 0.75rem;
+  }
+}
+
+.hint {
+  color: $text-muted;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+/* Grid de Tarjetas de Procesos */
+.policy-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* Diseño de cada Tarjeta */
+.policy-card {
+  background: $panel-bg;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  /* Efecto de "levantamiento" al pasar el mouse */
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+  }
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: $text-main;
+  }
+
+  p {
+    margin: 0 0 1.25rem 0;
+    color: $text-muted;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    flex-grow: 1; /* Esto empuja el botón siempre hacia abajo aunque el texto sea corto */
+  }
+
+  /* Botón de Iniciar Proceso */
+  button {
+    background-color: $primary;
+    color: white;
+    border: none;
+    padding: 0.7rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+
+    &:hover:not(:disabled) {
+      background-color: $primary-hover;
+    }
+
+    &:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Tabla de Tareas (Bandeja de Entrada) */
+.tasks-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  
+  th {
+    background-color: #f8fafc;
+    color: $text-muted;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 2px solid $border-color;
+    padding: 0.75rem 1rem;
+  }
+
+  td {
+    padding: 1rem;
+    color: $text-main;
+    border-bottom: 1px solid $border-color;
+    font-size: 0.95rem;
+  }
+
+  tbody tr {
+    transition: background-color 0.15s ease;
+    
+    &:last-child td {
+      border-bottom: none; /* Elimina el borde inferior de la última fila para que quede limpio */
+    }
+
+    &:hover {
+      background-color: #f1f5f9;
+      
+      /* Indicador visual azul a la izquierda al hacer hover en la tabla */
+      td:first-child {
+        border-left: 3px solid $primary; 
+      }
+    }
+    
+    td:first-child {
+      border-left: 3px solid transparent;
+      transition: border-color 0.15s ease;
+    }
+  }
+}

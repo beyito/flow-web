@@ -32,8 +32,11 @@
     <section class="block">
       <p class="section-title">Calles de negocio</p>
       <div class="lane-input">
-        <input type="text" [value]="newLaneName" (input)="newLaneName = $any($event.target).value" placeholder="Ej: Vendedor" />
-        <button type="button" (click)="addLane()" class="add-btn">+</button>
+        <select [(ngModel)]="selectedAreaId">
+          <option value="">-- Seleccionar area --</option>
+          <option *ngFor="let area of availableAreas" [value]="area.id">{{ area.name }}</option>
+        </select>
+        <button type="button" (click)="addLane()" class="add-btn" [disabled]="!selectedAreaId">+</button>
       </div>
       <div class="lanes-list" *ngIf="lanes.length > 0">
         <div class="lane-item" *ngFor="let lane of lanes" [style.borderLeft]="'4px solid ' + lane.color">
