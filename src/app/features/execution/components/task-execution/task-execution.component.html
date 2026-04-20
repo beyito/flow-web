@@ -36,7 +36,7 @@
         </div>
       }
 
-      @if (taskDetail.status === 'IN_PROGRESS') {
+      @if (taskDetail.status === 'IN_PROGRESS' && formReady) {
         <form [formGroup]="formGroup" class="dynamic-form" (ngSubmit)="submitTask()">
           @for (field of formSchemaFields; track fieldName(field, $index)) {
             <div class="form-field">
@@ -94,8 +94,13 @@
       @if (taskDetail.status === 'COMPLETED') {
         <section class="readonly-result">
           <h4>Respuestas registradas</h4>
-          @if (taskDetail.formData) {
-            <pre>{{ taskDetail.formData }}</pre>
+          @if (formSchemaFields.length && savedAnswers) {
+            @for (field of formSchemaFields; track fieldName(field, $index); let i = $index) {
+              <div class="answer-item">
+                <span class="answer-label">{{ field.label || fieldName(field, i) }}:</span>
+                <span class="answer-value">{{ savedAnswers[fieldName(field, i)] ?? 'Sin respuesta' }}</span>
+              </div>
+            }
           } @else {
             <p>Esta tarea no tiene respuestas guardadas.</p>
           }

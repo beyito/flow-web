@@ -28,6 +28,7 @@ export class TaskExecutionComponent implements OnInit {
   public taskDetail: TaskDetailDto | null = null;
   public formSchemaFields: TaskFormField[] = [];
   public formGroup: DynamicFormGroup = this.fb.group({}) as DynamicFormGroup;
+  public formReady = false;
   public savedAnswers: Record<string, unknown> = {};
 
   public ngOnInit(): void {
@@ -51,6 +52,7 @@ export class TaskExecutionComponent implements OnInit {
 
     this.loading = true;
     this.message = '';
+    this.formReady = false;
     this.cdr.detectChanges(); // 🚩 Avisamos que empezamos a cargar
 
     try {
@@ -58,6 +60,7 @@ export class TaskExecutionComponent implements OnInit {
       this.taskDetail = detail;
       this.formSchemaFields = this.parseSchema(detail.formSchema);
       this.formGroup = this.buildForm(this.formSchemaFields);
+      this.formReady = true;
       this.savedAnswers = this.parseFormData(detail.formData);
       console.log('Task details loaded:', { detail, formSchemaFields: this.formSchemaFields, savedAnswers: this.savedAnswers });
     } catch (error) {
@@ -129,7 +132,24 @@ export class TaskExecutionComponent implements OnInit {
   }
   public getFieldControl(field: TaskFormField, index: number): FormControl | null { /* ... */ return null; }
   public shouldShowError(field: TaskFormField, index: number): boolean { /* ... */ return false; }
-  private buildForm(fields: TaskFormField[]): DynamicFormGroup { /* ... */ return this.fb.group({}) as DynamicFormGroup; }
+  private buildForm(fields: TaskFormField[]): DynamicFormGroup {
+    const controls: Record<string, FormControl> = {};
+
+    fields.forEach((field, index) => {
+      const controlName = this.fieldName(field, index);
+      const isRequired = true;
+      const isBooleanField = field.type === 'checkbox' || field.type === 'boolean';
+
+      controls[controlName] = this.fb.control(
+        isBooleanField ? false : '',
+        isRequired
+          ? [isBooleanField ? Validators.requiredTrue : Validators.required]
+          : []
+      ) as FormControl;
+    });
+
+    return this.fb.group(controls) as DynamicFormGroup;
+  }
   private parseSchema(rawSchema: string): TaskFormField[] {
     if (!rawSchema || !rawSchema.trim()) {
       return [];
