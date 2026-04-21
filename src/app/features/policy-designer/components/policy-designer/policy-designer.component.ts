@@ -37,8 +37,13 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit, OnDestroy
   private graph: dia.Graph = this.diagramCanvasService.createGraph();
   private paper: dia.Paper = this.diagramCanvasService.createPaper(this.graph);
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private autoSaveInFlight = false;
+  private pendingAutoSave = false;
+  private suppressAutoSave = false;
   private draggingNodeType: string | null = null;
   private policySubscription: StompSubscription | null = null;
+  private cellSyncTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private isRemoteChange = false;
   private readonly clientId = crypto.randomUUID();
   
@@ -90,6 +95,12 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   public ngOnDestroy(): void {
+    this.cellSyncTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this.cellSyncTimeouts.clear();
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = null;
+    }
     this.policySubscription?.unsubscribe();
     this.webSocketService.disconnect();
   }
@@ -278,17 +289,58 @@ private showLinkTools(linkView: dia.LinkView): void {
 
   private registerGraphEvents(): void {
     this.graph.on('change:size', (element: dia.Element, newSize: dia.Size) => {
-  if (element.get('isLaneBackground')) {
-    const children = element.getEmbeddedCells();
-    children.forEach(child => {
-      // Ajustamos el ancho del cuerpo al mismo ancho de la cabecera
-      if (child.isElement()) {
-        child.resize(newSize.width, 800 - newSize.height);
+      if (element.get('isLaneBackground')) {
+        const children = element.getEmbeddedCells();
+        children.forEach(child => {
+          // Ajustamos el ancho del cuerpo al mismo ancho de la cabecera
+          if (child.isElement()) {
+            child.resize(newSize.width, 800 - newSize.height);
+          }
+        });
+        return;
+      }
+
+      this.scheduleCellRealtimeSync(element, 0);
+    });
+    this.graph.on('add remove change', () => {
+      this.scheduleLocalSave();
+      if (!this.isRemoteChange && !this.suppressAutoSave) {
+        this.scheduleAutoSave();
       }
     });
-  }
-});
-    this.graph.on('add remove change', () => this.scheduleLocalSave());
+    this.graph.on('add', (cell: dia.Cell) => {
+      if (this.isRemoteChange || !this.selectedPolicyId) {
+        return;
+      }
+
+      const event: DiagramEvent = {
+        action: 'add',
+        cellId: String(cell.id),
+        payload: {
+          cell: cell.toJSON(),
+          clientId: this.clientId
+        }
+      };
+
+      this.webSocketService.sendMessage(this.selectedPolicyId, event);
+    });
+
+    this.graph.on('remove', (cell: dia.Cell) => {
+      if (this.isRemoteChange || !this.selectedPolicyId) {
+        return;
+      }
+
+      const event: DiagramEvent = {
+        action: 'remove',
+        cellId: String(cell.id),
+        payload: {
+          clientId: this.clientId
+        }
+      };
+
+      this.webSocketService.sendMessage(this.selectedPolicyId, event);
+    });
+
     this.graph.on('change:position', (cell: dia.Cell) => {
       if (this.isRemoteChange || !this.selectedPolicyId || !cell.isElement()) {
         return;
@@ -358,21 +410,6 @@ private showLinkTools(linkView: dia.LinkView): void {
 
   public goBackToPanel(): void {
     void this.router.navigate(['/admin/policies']);
-  }
-
-  public async savePolicyGraph(): Promise<void> {
-    if (!this.selectedPolicyId) {
-      this.infoMessage = 'Selecciona una politica antes de guardar.';
-      return;
-    }
-
-    try {
-      const graphJson = JSON.stringify(this.diagramCanvasService.getPersistedGraphJSON(this.graph));
-      await this.policyDataService.updatePolicyDiagram(this.selectedPolicyId, graphJson, this.lanes);
-      this.infoMessage = 'Diagrama guardado correctamente en MongoDB.';
-    } catch (error) {
-      this.infoMessage = `Error guardando diagrama: ${error}`;
-    }
   }
 
   public addLane(): void {
@@ -645,6 +682,7 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.isRenaming = false;
     this.infoMessage = `Nodo renombrado a "${this.newElementName}".`;
     this.scheduleLocalSave();
+    this.scheduleCellRealtimeSync(element);
   }
 
   public cancelRename(): void {
@@ -693,6 +731,7 @@ private showLinkTools(linkView: dia.LinkView): void {
 
     element.set('nodeMeta', nodeMeta);
     this.scheduleLocalSave();
+    this.scheduleCellRealtimeSync(element);
   }
 
   public addTaskField(): void {
@@ -833,6 +872,7 @@ private showLinkTools(linkView: dia.LinkView): void {
 
     this.diagramCanvasService.updateLinkCondition(link, this.selectedLinkCondition);
     this.scheduleLocalSave();
+    this.scheduleCellRealtimeSync(link);
   }
 
   private async loadPolicyFromRoute(policyId: string | null): Promise<void> {
@@ -864,6 +904,42 @@ private showLinkTools(linkView: dia.LinkView): void {
     }
   }
 
+  private scheduleCellRealtimeSync(cell: dia.Cell, delayMs = 140): void {
+    if (this.isRemoteChange || !this.selectedPolicyId) {
+      return;
+    }
+
+    const cellId = String(cell.id);
+    const pendingTimeout = this.cellSyncTimeouts.get(cellId);
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+    }
+
+    const timeoutId = setTimeout(() => {
+      this.cellSyncTimeouts.delete(cellId);
+      this.sendCellSnapshot(cell);
+    }, delayMs);
+
+    this.cellSyncTimeouts.set(cellId, timeoutId);
+  }
+
+  private sendCellSnapshot(cell: dia.Cell): void {
+    if (!this.selectedPolicyId || this.isRemoteChange) {
+      return;
+    }
+
+    const event: DiagramEvent = {
+      action: 'update',
+      cellId: String(cell.id),
+      payload: {
+        cell: cell.toJSON(),
+        clientId: this.clientId
+      }
+    };
+
+    this.webSocketService.sendMessage(this.selectedPolicyId, event);
+  }
+
   private async connectToPolicyTopic(policyId: string): Promise<void> {
     try {
       await this.webSocketService.connect();
@@ -877,14 +953,29 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 
   private handleRemoteEvent(event: DiagramEvent): void {
-    if (event.action !== 'move') {
-      return;
-    }
-
     if (event.payload?.['clientId'] === this.clientId) {
       return;
     }
 
+    switch (event.action) {
+      case 'move':
+        this.applyRemoteMove(event);
+        return;
+      case 'add':
+        this.applyRemoteAdd(event);
+        return;
+      case 'remove':
+        this.applyRemoteRemove(event);
+        return;
+      case 'update':
+        this.applyRemoteCellSnapshot(event);
+        return;
+      default:
+        return;
+    }
+  }
+
+  private applyRemoteMove(event: DiagramEvent): void {
     const cell = this.graph.getCell(event.cellId);
     if (!cell || !cell.isElement()) {
       return;
@@ -905,6 +996,75 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.isRemoteChange = true;
     try {
       element.position(x, y);
+    } finally {
+      this.isRemoteChange = false;
+    }
+  }
+
+  private applyRemoteAdd(event: DiagramEvent): void {
+    const payloadCell = event.payload?.['cell'];
+    if (!payloadCell || typeof payloadCell !== 'object') {
+      return;
+    }
+
+    if (this.graph.getCell(event.cellId)) {
+      return;
+    }
+
+    this.isRemoteChange = true;
+    try {
+      this.graph.addCell(payloadCell as dia.Cell.JSON);
+    } finally {
+      this.isRemoteChange = false;
+    }
+  }
+
+  private applyRemoteRemove(event: DiagramEvent): void {
+    const cell = this.graph.getCell(event.cellId);
+    if (!cell) {
+      return;
+    }
+
+    this.isRemoteChange = true;
+    try {
+      cell.remove();
+    } finally {
+      this.isRemoteChange = false;
+    }
+  }
+
+  private applyRemoteCellSnapshot(event: DiagramEvent): void {
+    const cell = this.graph.getCell(event.cellId);
+    const cellSnapshot = event.payload?.['cell'];
+
+    if (!cell || !cellSnapshot || typeof cellSnapshot !== 'object') {
+      return;
+    }
+
+    this.isRemoteChange = true;
+    try {
+      const snapshot = cellSnapshot as Record<string, unknown>;
+      const partialUpdate: Record<string, unknown> = {};
+
+      if ('attrs' in snapshot) partialUpdate['attrs'] = snapshot['attrs'];
+      if ('nodeMeta' in snapshot) partialUpdate['nodeMeta'] = snapshot['nodeMeta'];
+      if ('conditionLabel' in snapshot) partialUpdate['conditionLabel'] = snapshot['conditionLabel'];
+      if ('labels' in snapshot) partialUpdate['labels'] = snapshot['labels'];
+      if ('vertices' in snapshot) partialUpdate['vertices'] = snapshot['vertices'];
+      if ('size' in snapshot) partialUpdate['size'] = snapshot['size'];
+
+      if (Object.keys(partialUpdate).length > 0) {
+        cell.set(partialUpdate);
+      }
+
+      if (cell.isElement() && snapshot['position'] && typeof snapshot['position'] === 'object') {
+        const position = snapshot['position'] as Record<string, unknown>;
+        const x = Number(position['x']);
+        const y = Number(position['y']);
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          (cell as dia.Element).position(x, y);
+        }
+      }
     } finally {
       this.isRemoteChange = false;
     }
@@ -952,13 +1112,18 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 
   private applyPolicy(policy: PolicyPayload): void {
-    this.selectedSourceId = null;
-    this.selectedTargetId = null;
-    this.isConnectionMode = false;
-    const normalizedLanes = this.normalizeLanesFromAreas(policy.lanes ?? []);
-    this.lanes = this.diagramCanvasService.recalculateLanePositions(normalizedLanes);
-    this.diagramCanvasService.renderPolicy(this.graph, policy, this.lanes);
-    this.diagramStorageService.clear();
+    this.suppressAutoSave = true;
+    try {
+      this.selectedSourceId = null;
+      this.selectedTargetId = null;
+      this.isConnectionMode = false;
+      const normalizedLanes = this.normalizeLanesFromAreas(policy.lanes ?? []);
+      this.lanes = this.diagramCanvasService.recalculateLanePositions(normalizedLanes);
+      this.diagramCanvasService.renderPolicy(this.graph, policy, this.lanes);
+      this.diagramStorageService.clear();
+    } finally {
+      this.suppressAutoSave = false;
+    }
   }
 
   private normalizeLanesFromAreas(sourceLanes: Lane[]): Lane[] {
@@ -992,6 +1157,46 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.saveTimeout = setTimeout(() => {
       this.diagramStorageService.save(this.selectedPolicyId, this.graph, this.lanes);
     }, 500);
+  }
+
+  private scheduleAutoSave(): void {
+    if (!this.selectedPolicyId) {
+      return;
+    }
+
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+    }
+
+    this.autoSaveTimeout = setTimeout(() => {
+      void this.persistPolicyGraph();
+    }, 1200);
+  }
+
+  private async persistPolicyGraph(): Promise<void> {
+    if (!this.selectedPolicyId) {
+      return;
+    }
+
+    if (this.autoSaveInFlight) {
+      this.pendingAutoSave = true;
+      return;
+    }
+
+    this.autoSaveInFlight = true;
+    try {
+      const graphJson = JSON.stringify(this.diagramCanvasService.getPersistedGraphJSON(this.graph));
+      await this.policyDataService.updatePolicyDiagram(this.selectedPolicyId, graphJson, this.lanes);
+      this.infoMessage = 'Cambios guardados automaticamente.';
+    } catch (error) {
+      this.infoMessage = `Error en guardado automatico: ${error}`;
+    } finally {
+      this.autoSaveInFlight = false;
+      if (this.pendingAutoSave) {
+        this.pendingAutoSave = false;
+        void this.persistPolicyGraph();
+      }
+    }
   }
 
   public trackByFieldId(index: number, field: FormField): string {

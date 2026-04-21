@@ -8,7 +8,6 @@
     <p class="section-hint">ID: {{ selectedPolicyId || 'Sin id' }}</p>
 
     <div class="button-row">
-      <button type="button" (click)="savePolicyGraph()" [disabled]="!selectedPolicyId">Guardar</button>
       <button type="button" (click)="getTaskExecutionOrder()" [disabled]="!selectedPolicyId">Ver orden</button>
       <button type="button" class="wide-button" (click)="goBackToPanel()">Panel</button>
     </div>
