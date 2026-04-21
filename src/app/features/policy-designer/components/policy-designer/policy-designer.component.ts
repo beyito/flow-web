@@ -6,10 +6,9 @@ import { dia, shapes, linkTools, elementTools, ui } from '@joint/plus';
 import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
-import { AuthService } from '../../../../auth.service';
-import { Attachment, CompanyArea, Lane, PolicyPayload, PolicySummary, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
+import { Attachment, CompanyArea, Lane, PolicyPayload, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
 import { NODE_TEMPLATES } from '../../utils/policy-designer.constants';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CompanyAreaService } from '../../services/company-area.service';
 
 @Component({
@@ -26,9 +25,10 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private readonly policyDataService = inject(PolicyDataService);
   private readonly diagramCanvasService = inject(DiagramCanvasService);
   private readonly diagramStorageService = inject(DiagramStorageService);
-  private readonly authService = inject(AuthService);
   private readonly companyAreaService = inject(CompanyAreaService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private graph: dia.Graph = this.diagramCanvasService.createGraph();
   private paper: dia.Paper = this.diagramCanvasService.createPaper(this.graph);
@@ -39,14 +39,9 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private freeTransform: any = null; 
 
   public readonly nodeTemplates = NODE_TEMPLATES;
-  public policies: PolicySummary[] = [];
+  public policyName = '';
   public selectedPolicyId: string | null = null;
-  public newPolicyName = '';
-  public newPolicyDescription = '';
-  public infoMessage = 'Cargando politicas...';
-  public get canManagePolicies(): boolean {
-    return this.authService.hasManagerRole();
-  }
+  public infoMessage = 'Cargando politica...';
   public selectedSourceId: dia.Cell.ID | null = null;
   public selectedTargetId: dia.Cell.ID | null = null;
   public isConnectionMode = false;
@@ -78,7 +73,9 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
     this.registerPaperEvents();
     this.registerGraphEvents();
     this.registerKeyboardEvents();
-    void this.initializeDesigner();
+    this.route.paramMap.subscribe((params) => {
+      void this.loadPolicyFromRoute(params.get('id'));
+    });
   }
 
   public ngAfterViewInit(): void {
@@ -328,70 +325,8 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.scheduleLocalSave();
   }
 
-  public async loadPolicyList(): Promise<void> {
-    try {
-      this.policies = await this.policyDataService.getAllPolicies();
-      this.infoMessage = 'Lista de politicas cargada.';
-      
-      // 🚩 AÑADE ESTA LÍNEA PARA FORZAR EL RENDERIZADO
-      this.cdr.detectChanges(); 
-      
-    } catch (error) {
-      this.infoMessage = `Error cargando politicas: ${error}`;
-      this.cdr.detectChanges(); // También es buena práctica ponerlo en el error
-    }
-  }
-  public async onPolicySelect(event: Event): Promise<void> {
-    const value = (event.target as HTMLSelectElement).value;
-    this.selectedPolicyId = value || null;
-    this.infoMessage = this.selectedPolicyId
-      ? `Politica seleccionada: ${this.selectedPolicyId}`
-      : 'Selecciona una politica para continuar.';
-  }
-
-  public async loadPolicy(): Promise<void> {
-    if (!this.selectedPolicyId) {
-      this.infoMessage = 'Selecciona una politica antes de cargar.';
-      return;
-    }
-
-    try {
-      const policy = await this.policyDataService.getPolicyById(this.selectedPolicyId);
-
-      if (!policy) {
-        this.infoMessage = 'Politica no encontrada.';
-        return;
-      }
-
-      this.applyPolicy(policy);
-      this.infoMessage = `Diagrama de politica ${policy.name} cargado.`;
-    } catch (error) {
-      this.infoMessage = `Error al cargar politica: ${error}`;
-    }
-  }
-
-  public async createPolicy(): Promise<void> {
-    if (!this.canManagePolicies) {
-      this.infoMessage = 'No tienes permiso para crear políticas de negocio.';
-      return;
-    }
-
-    if (!this.newPolicyName.trim()) {
-      this.infoMessage = 'Debes ingresar un nombre para la politica.';
-      return;
-    }
-
-    try {
-      const createdPolicy = await this.policyDataService.createPolicy(this.newPolicyName.trim(), this.newPolicyDescription.trim());
-      this.selectedPolicyId = createdPolicy.id;
-      this.newPolicyName = '';
-      this.newPolicyDescription = '';
-      this.resetDesignerState(false);
-      await this.loadPolicyList();
-      this.infoMessage = `Politica creada: ${createdPolicy.name}`;
-    } catch (error) {
-      this.infoMessage = `Error creando politica: ${error}`;
-    }
+  public goBackToPanel(): void {
+    void this.router.navigate(['/admin/policies']);
   }
 
   public async savePolicyGraph(): Promise<void> {
@@ -869,27 +804,29 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.scheduleLocalSave();
   }
 
-  public newDiagram(): void {
-    this.selectedPolicyId = null;
-    this.resetDesignerState(true);
-    this.infoMessage = 'Nuevo diagrama creado.';
-  }
+  private async loadPolicyFromRoute(policyId: string | null): Promise<void> {
+    if (!policyId) {
+      this.infoMessage = 'No se encontro el id de la politica en la URL.';
+      return;
+    }
 
-  private async initializeDesigner(): Promise<void> {
+    this.selectedPolicyId = policyId;
+
     try {
       await this.loadCompanyAreas();
-      // 1. Primero traemos la lista de la base de datos (sin forzar el renderizado aún)
-      this.policies = await this.policyDataService.getAllPolicies();
-      this.infoMessage = 'Lista de políticas cargada.';
-      
-      // 2. LUEGO restauramos el estado local (esto le dará un valor a selectedPolicyId)
-      this.restoreFromLocalStorage(); 
-      
-      // 3. AHORA SÍ, le decimos a Angular: "He terminado mis cálculos, por favor dibuja todo de golpe"
-      this.cdr.detectChanges(); 
-      
+      const policy = await this.policyDataService.getPolicyById(policyId);
+
+      if (!policy) {
+        this.infoMessage = `Politica no encontrada para el id ${policyId}.`;
+        return;
+      }
+
+      this.policyName = policy.name;
+      this.applyPolicy(policy);
+      this.infoMessage = `Editando politica: ${policy.name}`;
+      this.cdr.detectChanges();
     } catch (error) {
-      this.infoMessage = `Error cargando políticas: ${error}`;
+      this.infoMessage = `Error cargando politica: ${error}`;
       this.cdr.detectChanges();
     }
   }
@@ -945,43 +882,6 @@ private showLinkTools(linkView: dia.LinkView): void {
     this.diagramStorageService.clear();
   }
 
-  private restoreFromLocalStorage(): void {
-    const state = this.diagramStorageService.load();
-    if (!state) {
-      return;
-    }
-
-    try {
-      this.selectedPolicyId = state.policyId;
-      this.isConnectionMode = false;
-      const normalizedLanes = this.normalizeLanesFromAreas(state.lanes ?? []);
-      this.lanes = this.diagramCanvasService.recalculateLanePositions(normalizedLanes);
-      this.graph.clear();
-      this.diagramCanvasService.renderLaneBackgrounds(this.graph, this.lanes);
-
-      if (state.diagramJson) {
-        const graphData = this.diagramCanvasService.sanitizeGraphJSON(JSON.parse(state.diagramJson));
-        this.graph.fromJSON(graphData);
-      }
-
-      this.infoMessage = 'Diagrama restaurado desde localStorage.';
-    } catch {
-      this.diagramStorageService.clear();
-    }
-  }
-
-  private resetDesignerState(clearStorage: boolean): void {
-    this.graph.clear();
-    this.diagramCanvasService.clearLaneBackgrounds();
-    this.lanes = [];
-    this.selectedSourceId = null;
-    this.selectedTargetId = null;
-    this.isConnectionMode = false;
-    if (clearStorage) {
-      this.diagramStorageService.clear();
-    }
-  }
-
   private normalizeLanesFromAreas(sourceLanes: Lane[]): Lane[] {
     if (this.availableAreas.length === 0) {
       return sourceLanes;
@@ -1032,4 +932,8 @@ private showLinkTools(linkView: dia.LinkView): void {
     }).join(', ');
   }
 }
+
+
+
+
 

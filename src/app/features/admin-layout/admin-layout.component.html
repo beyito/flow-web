@@ -1,0 +1,27 @@
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Panel Administrativo</h1>
+      <p>Gestion de operacion empresarial</p>
+    </div>
+
+    <nav class="menu">
+      <a
+        routerLink="/admin/funcionarios"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }">
+        Gestion de Funcionarios
+      </a>
+      <a
+        routerLink="/admin/policies"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }">
+        Politicas de Negocio
+      </a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

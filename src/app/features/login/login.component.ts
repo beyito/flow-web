@@ -49,7 +49,7 @@ export class LoginComponent {
       if (this.authService.hasRole('SOFTWARE_ADMIN')) {
         this.router.navigate(['/admin-software']);
       } else if (this.authService.hasRole('COMPANY_ADMIN')) {
-        this.router.navigate(['/admin-empresa']);
+        this.router.navigate(['/admin/funcionarios']);
       } else {
         // Por descarte, si no es admin, asume que es funcionario/diseñador
         this.router.navigate(['/funcionario-dashboard']);

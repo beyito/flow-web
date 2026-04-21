@@ -1,0 +1,40 @@
+<section class="admin-shell">
+  <div class="panel">
+    <div class="panel-header" style="margin-bottom: 1.5rem;">
+      <h2>Gestion de Funcionarios</h2>
+      <p style="margin: 0; color: #6b7280; font-size: 1.05rem;">
+        Crea areas de trabajo y registra funcionarios para cada area.
+      </p>
+    </div>
+
+    <div class="panel-card">
+      <h3>Crear Area</h3>
+      <label>Nombre del area</label>
+      <input type="text" [(ngModel)]="newAreaName" placeholder="Nombre del area" />
+      <label>Calles (separadas por coma)</label>
+      <input type="text" [(ngModel)]="newAreaStreets" placeholder="Calle 1, Calle 2" />
+      <button type="button" (click)="createArea()" [disabled]="areaLoading">Crear area</button>
+      @if (areaMessage) {
+        <p class="message">{{ areaMessage }}</p>
+      }
+    </div>
+
+    <div class="panel-card">
+      <h3>Crear Funcionario</h3>
+      <label>Area</label>
+      <select [(ngModel)]="funcArea">
+        @for (area of areas; track area.id) {
+          <option [value]="area.name">{{ area.name }}</option>
+        }
+      </select>
+      <label>Usuario</label>
+      <input type="text" [(ngModel)]="funcUsername" placeholder="Nombre de usuario" />
+      <label>Contrasena</label>
+      <input type="password" [(ngModel)]="funcPassword" placeholder="Contrasena" />
+      <button type="button" (click)="createFunctionary()" [disabled]="funcLoading">Crear funcionario</button>
+      @if (funcMessage) {
+        <p class="message">{{ funcMessage }}</p>
+      }
+    </div>
+  </div>
+</section>

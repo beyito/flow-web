@@ -1,33 +1,17 @@
 <div class="app-shell">
   <aside class="panel">
-    <button class="btn-nav-back" routerLink="/admin-empresa">
-      ⬅ Volver al Panel
+    <button class="btn-nav-back" type="button" (click)="goBackToPanel()">
+      ← Volver al Panel
     </button>
     <h1>Disenador de diagramas</h1>
+    <p class="section-hint">Politica actual: {{ policyName || selectedPolicyId || 'Sin nombre' }}</p>
+    <p class="section-hint">ID: {{ selectedPolicyId || 'Sin id' }}</p>
 
-    <section class="block">
-      <label>Nombre de politica</label>
-      <input type="text" [value]="newPolicyName" (input)="newPolicyName = $any($event.target).value" placeholder="Diagrama de aprobacion" />
-      <label>Descripcion</label>
-      <input type="text" [value]="newPolicyDescription" (input)="newPolicyDescription = $any($event.target).value" placeholder="Por calles / roles" />
-      <button type="button" (click)="createPolicy()">Crear politica</button>
-    </section>
-
-    <section class="block">
-      <label>Politicas guardadas</label>
-      <select [value]="selectedPolicyId ?? ''" (change)="onPolicySelect($event)">
-        <option value="">-- Seleccionar --</option>
-        <option *ngFor="let policy of policies" [value]="policy.id">{{ policy.name }}</option>
-      </select>
-      <div class="button-row">
-        <button type="button" (click)="loadPolicy()" [disabled]="!selectedPolicyId">Cargar</button>
-        <button type="button" (click)="savePolicyGraph()" [disabled]="!selectedPolicyId">Guardar</button>
-        <button type="button" (click)="newDiagram()">Nuevo</button>
-      </div>
-      <button type="button" class="wide-button" (click)="getTaskExecutionOrder()" [disabled]="!selectedPolicyId">
-        Ver orden de tareas
-      </button>
-    </section>
+    <div class="button-row">
+      <button type="button" (click)="savePolicyGraph()" [disabled]="!selectedPolicyId">Guardar</button>
+      <button type="button" (click)="getTaskExecutionOrder()" [disabled]="!selectedPolicyId">Ver orden</button>
+      <button type="button" class="wide-button" (click)="goBackToPanel()">Panel</button>
+    </div>
 
     <section class="block">
       <p class="section-title">Calles de negocio</p>
@@ -271,3 +255,5 @@
     (dragleave)="onCanvasDragLeave()"
     (drop)="onCanvasDrop($event)"></main>
 </div>
+
+

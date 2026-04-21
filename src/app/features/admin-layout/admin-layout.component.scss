@@ -1,0 +1,72 @@
+:host {
+  display: block;
+}
+
+.admin-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(140deg, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
+}
+
+.sidebar {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 28px 20px;
+  border-right: 1px solid rgba(148, 163, 184, 0.25);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.brand p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.menu {
+  margin-top: 28px;
+  display: grid;
+  gap: 10px;
+}
+
+.menu a {
+  text-decoration: none;
+  color: #cbd5e1;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.menu a:hover {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.menu a.active {
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.2);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.content {
+  padding: 26px;
+}
+
+@media (max-width: 960px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+}

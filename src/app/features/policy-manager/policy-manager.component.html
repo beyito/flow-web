@@ -1,0 +1,70 @@
+<section class="manager-shell">
+  <header class="manager-header">
+    <div>
+      <h2>Politicas de Negocio</h2>
+      <p>Administra politicas y abre el editor de diagramas por identificador.</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h3>Nueva Politica</h3>
+    <label>Nombre</label>
+    <input
+      type="text"
+      [(ngModel)]="newPolicyName"
+      placeholder="Politica de aprobacion"
+    />
+
+    <label>Descripcion</label>
+    <textarea
+      rows="3"
+      [(ngModel)]="newPolicyDescription"
+      placeholder="Describe el objetivo de esta politica"></textarea>
+
+    <button type="button" (click)="createPolicy()" [disabled]="creating">
+      {{ creating ? 'Creando...' : 'Nueva Politica' }}
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row">
+      <h3>Politicas Registradas</h3>
+      <button type="button" class="btn-secondary" (click)="loadPolicies()" [disabled]="loading">
+        Recargar
+      </button>
+    </div>
+
+    @if (loading) {
+      <p class="muted">Cargando politicas...</p>
+    } @else {
+      @if (policies.length === 0) {
+        <p class="muted">No hay politicas disponibles.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Descripcion</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (policy of policies; track policy.id) {
+              <tr>
+                <td>{{ policy.name }}</td>
+                <td>{{ policy.description || 'Sin descripcion' }}</td>
+                <td>
+                  <button type="button" (click)="editDiagram(policy.id)">Editar Diagrama</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    @if (message) {
+      <p class="message">{{ message }}</p>
+    }
+  </div>
+</section>
