@@ -12,6 +12,7 @@
   "packageManager": "npm@11.11.0",
   "dependencies": {
     "@joint/plus": "file:joint-plus.tgz",
+    "@stomp/stompjs": "^7.2.0",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",

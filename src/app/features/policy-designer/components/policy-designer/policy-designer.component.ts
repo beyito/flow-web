@@ -1,12 +1,15 @@
 import { CommonModule, NgFor, NgIf } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 // 🚩 IMPORTANTE: Importamos linkTools, elementTools y ui
 import { dia, shapes, linkTools, elementTools, ui } from '@joint/plus'; 
+import { StompSubscription } from '@stomp/stompjs';
 import { DiagramCanvasService } from '../../services/diagram-canvas.service';
 import { DiagramStorageService } from '../../services/diagram-storage.service';
 import { PolicyDataService } from '../../services/policy-data.service';
+import { WebSocketService } from '../../services/web-socket.service';
 import { Attachment, CompanyArea, Lane, PolicyPayload, FormField, TaskExecutionOrder } from '../../models/policy-designer.models';
+import { DiagramEvent } from '../../models/diagram-event.model';
 import { NODE_TEMPLATES } from '../../utils/policy-designer.constants';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CompanyAreaService } from '../../services/company-area.service';
@@ -18,7 +21,7 @@ import { CompanyAreaService } from '../../services/company-area.service';
   templateUrl: './policy-designer.component.html',
   styleUrl: './policy-designer.component.scss'
 })
-export class PolicyDesignerComponent implements OnInit, AfterViewInit {
+export class PolicyDesignerComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('canvas')
   canvas!: ElementRef;
 
@@ -26,6 +29,7 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private readonly diagramCanvasService = inject(DiagramCanvasService);
   private readonly diagramStorageService = inject(DiagramStorageService);
   private readonly companyAreaService = inject(CompanyAreaService);
+  private readonly webSocketService = inject(WebSocketService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -34,6 +38,9 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
   private paper: dia.Paper = this.diagramCanvasService.createPaper(this.graph);
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private draggingNodeType: string | null = null;
+  private policySubscription: StompSubscription | null = null;
+  private isRemoteChange = false;
+  private readonly clientId = crypto.randomUUID();
   
   // 🚩 Variable para controlar el recuadro de redimensionamiento
   private freeTransform: any = null; 
@@ -80,6 +87,11 @@ export class PolicyDesignerComponent implements OnInit, AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.diagramCanvasService.mountPaper(this.canvas, this.paper);
+  }
+
+  public ngOnDestroy(): void {
+    this.policySubscription?.unsubscribe();
+    this.webSocketService.disconnect();
   }
 
   // ==========================================
@@ -277,6 +289,25 @@ private showLinkTools(linkView: dia.LinkView): void {
   }
 });
     this.graph.on('add remove change', () => this.scheduleLocalSave());
+    this.graph.on('change:position', (cell: dia.Cell) => {
+      if (this.isRemoteChange || !this.selectedPolicyId || !cell.isElement()) {
+        return;
+      }
+
+      const element = cell as dia.Element;
+      const position = element.position();
+      const event: DiagramEvent = {
+        action: 'move',
+        cellId: String(element.id),
+        payload: {
+          x: position.x,
+          y: position.y,
+          clientId: this.clientId
+        }
+      };
+
+      this.webSocketService.sendMessage(this.selectedPolicyId, event);
+    });
     
     // 🚩 LIMPIEZA DE ESTADO: Si borras con la 'X' roja, Angular limpia el sidebar
     this.graph.on('remove', (cell: dia.Cell) => {
@@ -810,6 +841,7 @@ private showLinkTools(linkView: dia.LinkView): void {
       return;
     }
 
+    this.policySubscription?.unsubscribe();
     this.selectedPolicyId = policyId;
 
     try {
@@ -823,11 +855,58 @@ private showLinkTools(linkView: dia.LinkView): void {
 
       this.policyName = policy.name;
       this.applyPolicy(policy);
+      await this.connectToPolicyTopic(policyId);
       this.infoMessage = `Editando politica: ${policy.name}`;
       this.cdr.detectChanges();
     } catch (error) {
       this.infoMessage = `Error cargando politica: ${error}`;
       this.cdr.detectChanges();
+    }
+  }
+
+  private async connectToPolicyTopic(policyId: string): Promise<void> {
+    try {
+      await this.webSocketService.connect();
+      this.policySubscription?.unsubscribe();
+      this.policySubscription = this.webSocketService.subscribeToPolicy(policyId, (event) => {
+        this.handleRemoteEvent(event);
+      });
+    } catch (error) {
+      this.infoMessage = `Conexion en tiempo real no disponible: ${error}`;
+    }
+  }
+
+  private handleRemoteEvent(event: DiagramEvent): void {
+    if (event.action !== 'move') {
+      return;
+    }
+
+    if (event.payload?.['clientId'] === this.clientId) {
+      return;
+    }
+
+    const cell = this.graph.getCell(event.cellId);
+    if (!cell || !cell.isElement()) {
+      return;
+    }
+
+    const x = Number(event.payload?.['x']);
+    const y = Number(event.payload?.['y']);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+
+    const element = cell as dia.Element;
+    const current = element.position();
+    if (current.x === x && current.y === y) {
+      return;
+    }
+
+    this.isRemoteChange = true;
+    try {
+      element.position(x, y);
+    } finally {
+      this.isRemoteChange = false;
     }
   }
 
